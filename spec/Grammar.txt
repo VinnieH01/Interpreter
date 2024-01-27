@@ -1,11 +1,11 @@
 stmt            -> LET IDENTIFIER ":=" expr SEMICOLON
                 -> expr SEMICOLON
 
-expr            -> term
+expr            -> sum
 
-term            -> factor (("+"|"-") factor)*
+sum             -> product (("+"|"-") product)*
 
-factor          -> unary (("*"|"/") unary)*
+product         -> unary (("*"|"/") unary)*
 
 unary           -> ("+"|"-") unary 
                 -> primary

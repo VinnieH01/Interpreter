@@ -113,61 +113,39 @@ ParseRes Parser::parse_let()
 
 ParseRes Parser::parse_expr()
 {
-	return parse_term();
+	return parse_sum();
 }
 
-ParseRes Parser::parse_term()
+ParseRes Parser::parse_sum()
 {
-	ParseRes lhs_res = parse_factor();
-	if (lhs_res.is_error()) return lhs_res;
-
-	ASTNode* lhs = *lhs_res;
-
-	while (m_current_token->type == OPERATOR && (
-		(*m_current_token)["operator"] == "+" ||
-		(*m_current_token)["operator"] == "-"))
-	{
-		const std::string& op = (*m_current_token)["operator"];
-		advance();
-
-		ParseRes rhs_res = parse_factor();
-		if (rhs_res.is_error())
-		{
-			delete lhs;
-			return rhs_res;
-		}
-
-		lhs = new ASTBinaryNode(op, lhs, *rhs_res);
-	}
-
-	return lhs;
+	return parse_binary_expr(std::bind(&Parser::parse_product, this), {"+", "-"});
 }
 
-ParseRes Parser::parse_factor()
+ParseRes Parser::parse_product()
 {
-	ParseRes lhs_res = parse_unary();
+	return parse_binary_expr(std::bind(&Parser::parse_unary, this), { "*", "/" });
+}
+
+ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& operand_parse_fn, const std::vector<std::string>& operators)
+{
+	ParseRes lhs_res = operand_parse_fn();
 	if (lhs_res.is_error())
 		return lhs_res;
 
-	ASTNode* lhs = *lhs_res;
+	std::unique_ptr<ASTNode> lhs(*lhs_res);
 
-	while (m_current_token->type == OPERATOR && (
-		(*m_current_token)["operator"] == "*" ||
-		(*m_current_token)["operator"] == "/"))
+	while (m_current_token->type == OPERATOR && std::find(operators.begin(), operators.end(), (*m_current_token)["operator"]) != operators.end())
 	{
 		const std::string& op = (*m_current_token)["operator"];
 		advance();
-		ParseRes rhs_res = parse_unary();
+		ParseRes rhs_res = parse_product();
 		if (rhs_res.is_error())
-		{
-			delete lhs;
 			return rhs_res;
-		}
 
-		lhs = new ASTBinaryNode(op, lhs, *rhs_res);
+		lhs = std::unique_ptr<ASTNode>(new ASTBinaryNode(op, lhs.release(), *rhs_res));
 	}
 
-	return lhs;
+	return lhs.release();
 }
 
 ParseRes Parser::parse_unary()

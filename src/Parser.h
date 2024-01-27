@@ -2,6 +2,7 @@
 
 #include "lexer.h"
 #include "AST.h"
+#include <functional>
 
 class Parser
 {
@@ -20,8 +21,11 @@ private:
 	ParseRes parse_stmt();
 	ParseRes parse_let();
 	ParseRes parse_expr();
-	ParseRes parse_term();
-	ParseRes parse_factor();
+
+	ParseRes parse_sum();
+	ParseRes parse_product();
+	ParseRes parse_binary_expr(const std::function<ParseRes()>& operand_parse_fn, const std::vector<std::string>& operators);
+
 	ParseRes parse_unary();
 	ParseRes parse_primary();
 

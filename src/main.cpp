@@ -33,11 +33,11 @@ int main()
 
 		const auto& tokens = *lexer_res;
 
-		for (const auto& token : tokens)
+		/*for (const auto& token : tokens)
 		{
 			token.print();
 			std::cout << std::endl;
-		}
+		}*/
 
 		auto parser_res = parser.parse(tokens);
 
