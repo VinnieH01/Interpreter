@@ -177,9 +177,19 @@ ParseRes Parser::parse_primary()
 		if (tok["data_type"] == "integer")
 		{
 			advance();
-			return new ASTLiteralNode(tok.get_int("value"));
+			return new ASTIntLiteralNode(tok.get_int("value"));
 		}
-		return "Only integer literals supported";
+		if (tok["data_type"] == "float")
+		{
+			advance();
+			return new ASTFloatLiteralNode(tok.get_float("value"));
+		}
+		if (tok["data_type"] == "string")
+		{
+			advance();
+			return new ASTStringLiteralNode(tok["value"]);
+		}
+		return "Only number literals supported";
 	}
 	else if (tok.type == IDENTIFIER)
 	{

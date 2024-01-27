@@ -1,0 +1,4 @@
+// Hint files help the Visual Studio IDE interpret Visual C++ identifiers
+// such as names of functions and macros.
+// For more information see https://go.microsoft.com/fwlink/?linkid=865984
+#define ASTLiteralNode(T, name) class AST##name##: public ASTNode { public: AST##name(T value) : m_value(value) {} inline int get_value() const { return m_value; } inline virtual void print() const override { std::cout << "{Literal: " << m_value << "}"; } inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const { return visitor.visit(*this); } private: T m_value; };

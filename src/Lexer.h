@@ -52,6 +52,11 @@ struct Token
 		return std::stoi(m_meta.at(key).c_str());
 	}
 
+	inline float get_float(const std::string& key) const
+	{
+		return std::stof(m_meta.at(key).c_str());
+	}
+
 private:
 	const std::unordered_map<std::string, std::string> m_meta;
 };

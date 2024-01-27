@@ -64,7 +64,18 @@ int main()
 		if (res.is_error()) std::cout << res.get_error() << std::endl;
 		else if (res.has_value()) 
 		{
-			std::cout << "Output: " << *res << std::endl;
+			switch ((*res).index())
+			{
+			case 0:
+				std::cout << "Output: " << std::get<0>(*res) << std::endl;
+				break;
+			case 1:
+				std::cout << "Output: " << std::get<1>(*res) << std::endl;
+				break;
+			case 2:
+				std::cout << "Output: " << std::get<2>(*res) << std::endl;
+				break;
+			}
 		}
 
 	}

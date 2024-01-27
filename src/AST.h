@@ -9,8 +9,10 @@
 #include "ASTVisitor.h"
 
 #include "Result.h"
+#include <variant>
 
-using InterpreterResult = Result<int, const char*>;
+using Value = std::variant<int, float, std::string>;
+using InterpreterResult = Result<Value, const char*>;
 
 class ASTNode
 {
@@ -19,27 +21,29 @@ public:
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const = 0;
 };
 
-class ASTLiteralNode : public ASTNode
-{
-public:
-	ASTLiteralNode(int value)
-		: m_value(value)
-	{}
-	inline int get_value() const { return m_value; }
+//Easier to do this instead of template because of the visitor
+#define ASTLiteralNode(T, name) class AST##name## : public ASTNode \
+{ \
+public: \
+	AST##name(T value) \
+		: m_value(value) \
+	{} \
+	inline T get_value() const { return m_value; } \
+	inline virtual void print() const override \
+	{ \
+		std::cout << "{Literal: " << m_value << "}"; \
+	} \
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const \
+	{ \
+		return visitor.visit(*this); \
+	} \
+private: \
+	T m_value; \
+};  \
 
-	inline virtual void print() const override
-	{
-		std::cout << "{Literal: " << m_value << "}";
-	}
-
-	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
-	{
-		return visitor.visit(*this);
-	}
-
-private:
-	int m_value;
-};
+ASTLiteralNode(int, IntLiteralNode)
+ASTLiteralNode(float, FloatLiteralNode)
+ASTLiteralNode(std::string, StringLiteralNode)
 
 class ASTIdentifierNode : public ASTNode
 {
