@@ -1,0 +1,15 @@
+stmt            -> LET IDENTIFIER ":=" expr SEMICOLON
+                -> expr SEMICOLON
+
+expr            -> term
+
+term            -> factor (("+"|"-") factor)*
+
+factor          -> unary (("*"|"/") unary)*
+
+unary           -> ("+"|"-") unary 
+                -> primary
+
+primary         -> LITERAL
+                -> IDENTIFIER
+                -> LPAR expr RPAR
