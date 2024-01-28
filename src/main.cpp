@@ -33,11 +33,11 @@ int main()
 
 		const auto& tokens = *lexer_res;
 
-		/*for (const auto& token : tokens)
+		for (const auto& token : tokens)
 		{
 			token.print();
 			std::cout << std::endl;
-		}*/
+		}
 
 		auto parser_res = parser.parse(tokens);
 
@@ -75,6 +75,9 @@ int main()
 			case 2:
 				std::cout << "Output: " << std::get<2>(*res) << std::endl;
 				break;
+			case 3:
+				std::cout << "Output: " << "Array" << (int)(std::get<3>(*res).get_type()) 
+					<< "*" << std::get<3>(*res).get_size() << std::endl;
 			}
 		}
 

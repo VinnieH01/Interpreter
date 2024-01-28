@@ -16,9 +16,22 @@ InterpreterResult Interpreter::visit(const ASTFloatLiteralNode& node)
 	return Value(node.get_value());
 }
 
-InterpreterResult Interpreter::visit(const ASTStringLiteralNode& node)
+InterpreterResult Interpreter::visit(const ASTCharLiteralNode& node)
 {
 	return Value(node.get_value());
+}
+
+InterpreterResult Interpreter::visit(const ASTArrayInitNode& node)
+{
+	InterpreterResult size_expr_res = node.get_size_expr()->accept(*this);
+	if (size_expr_res.is_error())
+		return size_expr_res;
+
+	const Value& size = *size_expr_res;
+	if (!std::holds_alternative<int>(size))
+		return "Array can only be initialised with integer size";
+
+	return Value(Array(node.get_type(), std::get<int>(size)));
 }
 
 InterpreterResult Interpreter::visit(const ASTIdentifierNode& node)
@@ -31,10 +44,10 @@ InterpreterResult Interpreter::visit(const ASTIdentifierNode& node)
 
 InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 {
-	const InterpreterResult& operand_res = node.get_operand()->accept(*this);
+	InterpreterResult operand_res = node.get_operand()->accept(*this);
 	if (operand_res.is_error()) return operand_res;
 
-	const auto& operand = *operand_res;
+	const Value& operand = *operand_res;
 
 	switch (operand.index())
 	{
@@ -42,6 +55,8 @@ InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 		return Value(std::get<0>(operand) * (node.get_operator() == "-" ? -1 : 1));
 	case 1:
 		return Value(std::get<1>(operand) * (node.get_operator() == "-" ? -1 : 1));
+	case 2:
+		return Value(std::get<2>(operand) * (node.get_operator() == "-" ? -1 : 1));
 	}
 }
 
@@ -58,10 +73,10 @@ InterpreterResult binary_operation_helper(const Value& lhs, const Value& rhs, co
 
 InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 {
-	const InterpreterResult& lhs_res = node.get_lhs()->accept(*this);
+	InterpreterResult lhs_res = node.get_lhs()->accept(*this);
 	if (lhs_res.is_error()) return lhs_res.get_error();
 
-	const InterpreterResult& rhs_res = node.get_rhs()->accept(*this);
+	InterpreterResult rhs_res = node.get_rhs()->accept(*this);
 	if (rhs_res.is_error()) return rhs_res.get_error();
 
 	const auto& lhs = *lhs_res;
@@ -78,6 +93,8 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 		return binary_operation_helper<0>(lhs, rhs, op);
 	case 1:
 		return binary_operation_helper<1>(lhs, rhs, op);
+	case 2:
+		return binary_operation_helper<2>(lhs, rhs, op);
 	}
 
 	return "Incompatible types in binary operation";
@@ -85,7 +102,7 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 
 InterpreterResult Interpreter::visit(const ASTLetNode& node)
 {
-	const InterpreterResult& expr = node.get_expr()->accept(*this);
+	InterpreterResult expr = node.get_expr()->accept(*this);
 	if (expr.is_error()) return expr.get_error();
 
 	m_symbol_table[node.get_var_name()] = *expr;

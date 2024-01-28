@@ -17,6 +17,9 @@ enum TokenType
 	LET,
 	LPAR,
 	RPAR,
+	LBRACKET,
+	RBRACKET,
+	TYPE
 };
 
 struct Token
@@ -57,6 +60,11 @@ struct Token
 		return std::stof(m_meta.at(key).c_str());
 	}
 
+	inline char get_char(const std::string& key) const
+	{
+		return m_meta.at(key).c_str()[0];
+	}
+
 private:
 	const std::unordered_map<std::string, std::string> m_meta;
 };
@@ -74,6 +82,7 @@ private:
 
 	TokenResult tokenize_identifier();
 	TokenResult tokenize_special_char();
+	TokenResult tokenize_char();
 	TokenResult tokenize_operator();
 	TokenResult tokenize_number();
 	TokenResult tokenize_string();
@@ -83,11 +92,18 @@ private:
 		{ "let", LET },
 	};
 
+	const std::vector<std::string> m_types
+	{
+		"int", "float", "char"
+	};
+
 	const std::unordered_map<char, TokenType> m_special_chars
 	{
 		{ ';', SEMICOLON },
 		{ '(', LPAR },
 		{ ')', RPAR },
+		{ '[', LBRACKET },
+		{ ']', RBRACKET },
 	};
 
 	const std::vector<char> m_operator_constituents
@@ -97,7 +113,7 @@ private:
 
 	const std::vector<std::string> m_operators
 	{
-		"+",  "-",  "*", ":=", "/"
+		"+", "-", "*", ":=", "/"
 	};
 
 	const std::string* m_text;

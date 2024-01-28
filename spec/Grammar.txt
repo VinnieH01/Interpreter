@@ -13,3 +13,4 @@ unary           -> ("+"|"-") unary
 primary         -> LITERAL
                 -> IDENTIFIER
                 -> LPAR expr RPAR
+                -> TYPE LBRACKET expr RBRACKET //Array creation

@@ -6,8 +6,7 @@
 #include "AST.h"
 #include <variant>
 
-
-using Value = std::variant<int, float, std::string>;
+using Value = std::variant<int, float, char, Array>;
 using InterpreterResult = Result<Value, const char*>;
 
 class Interpreter : public ASTVisitor<InterpreterResult>
@@ -17,7 +16,8 @@ public:
 
 	virtual InterpreterResult visit(const ASTIntLiteralNode&) override;
 	virtual InterpreterResult visit(const ASTFloatLiteralNode&) override;
-	virtual InterpreterResult visit(const ASTStringLiteralNode&) override;
+	virtual InterpreterResult visit(const ASTCharLiteralNode&) override;
+	virtual InterpreterResult visit(const ASTArrayInitNode&) override;
 	virtual InterpreterResult visit(const ASTIdentifierNode& node) override;
 	virtual InterpreterResult visit(const ASTUnaryNode&) override;
 	virtual InterpreterResult visit(const ASTBinaryNode&) override;

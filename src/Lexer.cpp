@@ -76,6 +76,14 @@ Result<std::vector<Token>, std::vector<const char*>> Lexer::tokenize(const std::
 			else
 				tokens.push_back(*res);
 		}
+		else if (m_current_char == '\'')
+		{
+			TokenResult res = tokenize_char();
+			if (res.is_error())
+				errors.push_back(res.get_error());
+			else
+				tokens.push_back(*res);
+		}
 		else
 		{
 			errors.push_back("Unkown token");
@@ -100,6 +108,10 @@ TokenResult Lexer::tokenize_identifier()
 	if (m_keywords.find(result) != m_keywords.end())
 	{
 		return Token(m_keywords.at(result), {});
+	}
+	if (std::find(m_types.begin(), m_types.end(), result) != m_types.end())
+	{
+		return Token(TYPE, { { "data_type", result } });
 	}
 	return Token(IDENTIFIER, { { "name", result } });
 }
@@ -153,6 +165,21 @@ TokenResult Lexer::tokenize_special_char()
 	char special = m_current_char;
 	advance();
 	return Token(m_special_chars.at(special), {});
+}
+
+TokenResult Lexer::tokenize_char()
+{
+	//TODO Better error handling for ex 'long char' and other stuff
+
+	std::string result = "";
+	advance(); // Skip the first '
+	if (m_current_char != '\0' && m_current_char != '\'')
+	{
+		result += m_current_char;
+		advance();
+	}
+	advance(); // Skip the last '
+	return Token(LITERAL, { { "data_type", "char" }, { "value", result } }); //TODO: Store this as number?
 }
 
 TokenResult Lexer::tokenize_string()

@@ -11,7 +11,9 @@
 #include "Result.h"
 #include <variant>
 
-using Value = std::variant<int, float, std::string>;
+#include "Array.h"
+
+using Value = std::variant<int, float, char, Array>;
 using InterpreterResult = Result<Value, const char*>;
 
 class ASTNode
@@ -43,7 +45,35 @@ private: \
 
 ASTLiteralNode(int, IntLiteralNode)
 ASTLiteralNode(float, FloatLiteralNode)
-ASTLiteralNode(std::string, StringLiteralNode)
+ASTLiteralNode(char, CharLiteralNode)
+
+class ASTArrayInitNode : public ASTNode
+{
+public:
+	ASTArrayInitNode(const std::string& data_type, ASTNode* size_expr)
+		: m_data_type(data_type)
+		, m_size_expr(size_expr)
+	{}
+
+	inline const std::unique_ptr<ASTNode>& get_size_expr() const { return m_size_expr; }
+	inline const std::string& get_type() const { return m_data_type; }
+
+	inline virtual void print() const override
+	{
+		std::cout << "{Array: " << m_data_type << "*";
+		m_size_expr->print();
+		std::cout << "}";
+	}
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+
+private:
+	const std::string m_data_type;
+	const std::unique_ptr<ASTNode> m_size_expr;
+};
 
 class ASTIdentifierNode : public ASTNode
 {

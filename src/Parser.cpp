@@ -184,10 +184,10 @@ ParseRes Parser::parse_primary()
 			advance();
 			return new ASTFloatLiteralNode(tok.get_float("value"));
 		}
-		if (tok["data_type"] == "string")
+		if (tok["data_type"] == "char")
 		{
 			advance();
-			return new ASTStringLiteralNode(tok["value"]);
+			return new ASTCharLiteralNode(tok.get_char("value"));
 		}
 		return "Only number literals supported";
 	}
@@ -195,6 +195,24 @@ ParseRes Parser::parse_primary()
 	{
 		advance();
 		return new ASTIdentifierNode(tok["name"]);
+	}
+	else if (tok.type == TYPE) 
+	{
+		advance();
+		if (m_current_token->type != LBRACKET)
+			return "Expected '[' after type in array initialisation";
+		advance();
+
+		ParseRes expr_res = parse_expr();
+		if (expr_res.is_error())
+			return expr_res;
+		std::unique_ptr<ASTNode> expr(*expr_res);
+
+		if (m_current_token->type != RBRACKET)
+			return "Expected ']' after array initialisation";
+		advance();
+
+		return new ASTArrayInitNode(tok["data_type"], expr.release());
 	}
 	else if (tok.type == LPAR)
 	{
@@ -204,16 +222,13 @@ ParseRes Parser::parse_primary()
 		if (expr_res.is_error())
 			return expr_res;
 
-		ASTNode* expr = *expr_res;
+		std::unique_ptr<ASTNode> expr(*expr_res);
 
 		if (m_current_token->type != RPAR)
-		{
-			delete expr;
 			return "Expected ')' in parenthesised expression";
-		}
 		advance();
 
-		return expr;
+		return expr.release();
 	}
 
 	return "Invalid Expression";
