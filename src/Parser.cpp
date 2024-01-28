@@ -212,7 +212,9 @@ ParseRes Parser::parse_primary()
 			return "Expected ']' after array initialisation";
 		advance();
 
-		return new ASTArrayInitNode(tok["data_type"], expr.release());
+		return new ASTArrayInitNode(tok["data_type"] == "int" ? ArrayType::INT : 
+									tok["data_type"] == "float" ? ArrayType::FLOAT : 
+									ArrayType::CHAR, expr.release());
 	}
 	else if (tok.type == LPAR)
 	{

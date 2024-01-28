@@ -48,17 +48,17 @@ private:
 class ASTArrayInitNode : public ASTNode
 {
 public:
-	ASTArrayInitNode(const std::string& data_type, ASTNode* size_expr)
+	ASTArrayInitNode(ArrayType data_type, ASTNode* size_expr)
 		: m_data_type(data_type)
 		, m_size_expr(size_expr)
 	{}
 
 	inline const std::unique_ptr<ASTNode>& get_size_expr() const { return m_size_expr; }
-	inline const std::string& get_type() const { return m_data_type; }
+	inline ArrayType get_type() const { return m_data_type; }
 
 	inline virtual void print() const override
 	{
-		std::cout << "{Array: " << m_data_type << "*";
+		std::cout << "{Array: " << (int)m_data_type << "*";
 		m_size_expr->print();
 		std::cout << "}";
 	}
@@ -69,7 +69,7 @@ public:
 	}
 
 private:
-	const std::string m_data_type;
+	const ArrayType m_data_type;
 	const std::unique_ptr<ASTNode> m_size_expr;
 };
 
