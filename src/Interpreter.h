@@ -14,9 +14,7 @@ class Interpreter : public ASTVisitor<InterpreterResult>
 public:
 	InterpreterResult interpret(const ASTNode&);
 
-	virtual InterpreterResult visit(const ASTIntLiteralNode&) override;
-	virtual InterpreterResult visit(const ASTFloatLiteralNode&) override;
-	virtual InterpreterResult visit(const ASTCharLiteralNode&) override;
+	virtual InterpreterResult visit(const ASTLiteralNode&) override;
 	virtual InterpreterResult visit(const ASTArrayInitNode&) override;
 	virtual InterpreterResult visit(const ASTIdentifierNode& node) override;
 	virtual InterpreterResult visit(const ASTUnaryNode&) override;

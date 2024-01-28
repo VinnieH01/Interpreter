@@ -23,29 +23,27 @@ public:
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const = 0;
 };
 
-//Easier to do this instead of template because of the visitor
-#define ASTLiteralNode(T, name) class AST##name## : public ASTNode \
-{ \
-public: \
-	AST##name(T value) \
-		: m_value(value) \
-	{} \
-	inline T get_value() const { return m_value; } \
-	inline virtual void print() const override \
-	{ \
-		std::cout << "{Literal: " << m_value << "}"; \
-	} \
-	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const \
-	{ \
-		return visitor.visit(*this); \
-	} \
-private: \
-	T m_value; \
-};  \
+class ASTLiteralNode : public ASTNode 
+{ 
+public: 
+	ASTLiteralNode(const std::variant<int, float, char>& value)
+		: m_value(value) 
+	{} 
+	inline const std::variant<int, float, char>& get_value() const { return m_value; } 
+	inline virtual void print() const override 
+	{ 
+		//TODO: Print correctly std::cout << "{Literal: " << m_value << "}"; 
+		//Printing is only used for debugging anyway so for now it's fine
 
-ASTLiteralNode(int, IntLiteralNode)
-ASTLiteralNode(float, FloatLiteralNode)
-ASTLiteralNode(char, CharLiteralNode)
+		std::cout << "{Literal}";
+	} 
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const 
+	{ 
+		return visitor.visit(*this); 
+	} 
+private: 
+	std::variant<int, float, char> m_value; 
+};  
 
 class ASTArrayInitNode : public ASTNode
 {

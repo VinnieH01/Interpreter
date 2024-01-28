@@ -6,19 +6,19 @@ InterpreterResult Interpreter::interpret(const ASTNode& node)
 	return node.accept(*this);
 }
 
-InterpreterResult Interpreter::visit(const ASTIntLiteralNode& node)
+InterpreterResult Interpreter::visit(const ASTLiteralNode& node)
 {
-	return Value(node.get_value());
-}
-
-InterpreterResult Interpreter::visit(const ASTFloatLiteralNode& node)
-{
-	return Value(node.get_value());
-}
-
-InterpreterResult Interpreter::visit(const ASTCharLiteralNode& node)
-{
-	return Value(node.get_value());
+	const auto& literal_value = node.get_value();
+	
+	switch (literal_value.index())
+	{
+	case 0:
+		return Value(std::get<0>(literal_value));
+	case 1:
+		return Value(std::get<1>(literal_value));
+	case 2:
+		return Value(std::get<2>(literal_value));
+	}
 }
 
 InterpreterResult Interpreter::visit(const ASTArrayInitNode& node)

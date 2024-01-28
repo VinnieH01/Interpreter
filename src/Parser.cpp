@@ -177,17 +177,17 @@ ParseRes Parser::parse_primary()
 		if (tok["data_type"] == "integer")
 		{
 			advance();
-			return new ASTIntLiteralNode(tok.get_int("value"));
+			return new ASTLiteralNode(tok.get_int("value"));
 		}
 		if (tok["data_type"] == "float")
 		{
 			advance();
-			return new ASTFloatLiteralNode(tok.get_float("value"));
+			return new ASTLiteralNode(tok.get_float("value"));
 		}
 		if (tok["data_type"] == "char")
 		{
 			advance();
-			return new ASTCharLiteralNode(tok.get_char("value"));
+			return new ASTLiteralNode(tok.get_char("value"));
 		}
 		return "Only number literals supported";
 	}
