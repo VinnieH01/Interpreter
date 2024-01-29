@@ -6,6 +6,7 @@
 #include <string>
 #include <array>
 #include "Result.h"
+#include <regex>
 
 enum TokenType
 {
@@ -71,21 +72,22 @@ private:
 
 class Lexer
 {
-	using TokenResult = Result<Token, const char*>;
-
 public:
-	Lexer();
-	Result<std::vector<Token>, std::vector<const char*>> tokenize(const std::string& text);
+	Result<std::vector<Token>, size_t> tokenize(std::string text);
 
 private:
-	void advance();
+	Token tokenize_text(const std::string& value);
+	Token tokenize_number(const std::string& value);
 
-	TokenResult tokenize_identifier();
-	TokenResult tokenize_special_char();
-	TokenResult tokenize_char();
-	TokenResult tokenize_operator();
-	TokenResult tokenize_number();
-	TokenResult tokenize_string();
+	const std::vector<std::pair<std::string, std::regex>> m_token_patterns
+	{
+		{ "WHITESPACE", std::regex("^\\s+")},
+		{ "NUMBER", std::regex("^[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?")},
+		{ "TEXT", std::regex("^[a-zA-Z_]\\w*")},
+		{ "CHAR_LITERAL", std::regex("^'(.)'")},
+		{ "OPERATOR", std::regex("^[+\\-*\\/]|^:=")},
+		{ "SPECIAL", std::regex("^[;()\\[\\]]")},
+	};
 
 	const std::unordered_map<std::string, TokenType> m_keywords
 	{
@@ -115,8 +117,4 @@ private:
 	{
 		"+", "-", "*", ":=", "/"
 	};
-
-	const std::string* m_text;
-	size_t m_index;
-	char m_current_char;
 };

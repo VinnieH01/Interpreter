@@ -24,10 +24,7 @@ int main()
 		auto lexer_res = lexer.tokenize(input_code);
 		if (lexer_res.is_error())
 		{
-			std::cout << "Error in Lexer:" << std::endl;
-
-			for (const auto& error : lexer_res.get_error())
-				std::cout << error << std::endl;
+			std::cout << "Error in Lexer at index: "  << lexer_res.get_error() << std::endl;
 			continue;
 		}
 

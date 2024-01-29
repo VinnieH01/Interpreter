@@ -6,191 +6,57 @@
 
 #include "Lexer.h"
 
-Lexer::Lexer()
-	: m_text(nullptr)
-	, m_index(0)
-	, m_current_char('\0')
-{}
-
-void Lexer::advance()
+Result<std::vector<Token>, size_t> Lexer::tokenize(std::string text) 
 {
-	m_index++;
-	m_current_char = (m_index < m_text->size()) ? ((*m_text)[m_index]) : '\0';
-}
-
-using TokenResult = Result<Token, const char*>;
-
-Result<std::vector<Token>, std::vector<const char*>> Lexer::tokenize(const std::string& text)
-{
-	m_index = 0;
-	m_text = &text;
-	m_current_char = text[0];
-
-	std::vector<const char*> errors;
 	std::vector<Token> tokens;
-	while (m_current_char != '\0')
+	size_t cntr = 0;
+	while (text.size() > 0)
 	{
-		if (std::isspace(m_current_char))
+		std::smatch match;
+		for (const auto& pattern : m_token_patterns)
 		{
-			advance();
+			if (std::regex_search(text, match, pattern.second))
+			{
+				const std::string& value = match[0];
+				if (pattern.first != "WHITESPACE")
+				{
+					if      (pattern.first == "NUMBER") tokens.push_back(tokenize_number(value));
+					else if (pattern.first == "TEXT") tokens.push_back(tokenize_text(value));
+					else if (pattern.first == "CHAR_LITERAL") tokens.push_back(Token(LITERAL, { { "data_type", "char" }, { "value", match[1]}}));
+					else if (pattern.first == "OPERATOR") tokens.push_back(Token(OPERATOR, { { "operator", value } }));
+					else if (pattern.first == "SPECIAL") tokens.push_back(Token(m_special_chars.at(value[0]), {}));
+				}
+				text = text.substr(value.size());
+				cntr += value.size();
+				break;
+			}
 		}
-		else if (std::isalpha(m_current_char) || m_current_char == '_')
-		{
-			TokenResult res = tokenize_identifier();
-			if (res.is_error()) 
-				errors.push_back(res.get_error());
-			else
-			tokens.push_back(*res);
-		}
-		else if (std::find(m_operator_constituents.begin(), m_operator_constituents.end(), m_current_char) != m_operator_constituents.end())
-		{
-			TokenResult res = tokenize_operator();
-			if (res.is_error())
-				errors.push_back(res.get_error());
-			else
-				tokens.push_back(*res);
-		}
-
-		//This has to be done after tokenize_operator since some special chars could potentially be operator constituents in the future
-		else if (m_special_chars.find(m_current_char) != m_special_chars.end())
-		{
-			TokenResult res = tokenize_special_char();
-			if (res.is_error())
-				errors.push_back(res.get_error());
-			else
-				tokens.push_back(*res);
-		}
-		else if (std::isdigit(m_current_char))
-		{
-			TokenResult res = tokenize_number();
-			if (res.is_error())
-				errors.push_back(res.get_error());
-			else
-				tokens.push_back(*res);
-		}
-		else if (m_current_char == '"')
-		{
-			TokenResult res = tokenize_string();
-			if (res.is_error())
-				errors.push_back(res.get_error());
-			else
-				tokens.push_back(*res);
-		}
-		else if (m_current_char == '\'')
-		{
-			TokenResult res = tokenize_char();
-			if (res.is_error())
-				errors.push_back(res.get_error());
-			else
-				tokens.push_back(*res);
-		}
-		else
-		{
-			errors.push_back("Unkown token");
-			advance();
-		}
+		if (match.empty())
+			return cntr;
 	}
-	tokens.push_back(Token(EOF_TOKEN, {}));
 
-	if (!errors.empty())
-		return errors;
+	tokens.push_back(Token(EOF_TOKEN, {}));
 	return tokens;
 }
 
-TokenResult Lexer::tokenize_identifier()
+Token Lexer::tokenize_text(const std::string& value)
 {
-	std::string result = "";
-	while (m_current_char != '\0' && (std::isalnum(m_current_char) || m_current_char == '_'))
+	if (m_keywords.find(value) != m_keywords.end())
 	{
-		result += m_current_char;
-		advance();
+		return Token(m_keywords.at(value), {});
 	}
-	if (m_keywords.find(result) != m_keywords.end())
+	if (std::find(m_types.begin(), m_types.end(), value) != m_types.end())
 	{
-		return Token(m_keywords.at(result), {});
+		return Token(TYPE, { { "data_type", value } });
 	}
-	if (std::find(m_types.begin(), m_types.end(), result) != m_types.end())
-	{
-		return Token(TYPE, { { "data_type", result } });
-	}
-	return Token(IDENTIFIER, { { "name", result } });
+	return Token(IDENTIFIER, { { "name", value } });
 }
 
-TokenResult Lexer::tokenize_operator()
+Token Lexer::tokenize_number(const std::string& value)
 {
-	std::string result(1, m_current_char);
-	advance();
-	std::string double_op = result + std::string(1, m_current_char);
-	if (std::find(m_operators.begin(), m_operators.end(), double_op) != m_operators.end())
+	if (value.find('.') != std::string::npos)
 	{
-		advance();
-		return Token(OPERATOR, { { "operator", double_op } });
+		return Token(LITERAL, { { "data_type", "float" }, { "value", value } });
 	}
-	if (m_keywords.find(result) != m_keywords.end())
-	{
-		return Token(m_keywords.at(result), {});
-	}
-	if (std::find(m_operators.begin(), m_operators.end(), result) != m_operators.end())
-	{
-		return Token(OPERATOR, { { "operator", result } });
-	}
-
-	return "Unknown token";
-}
-
-TokenResult Lexer::tokenize_number()
-{
-	std::string result = "";
-	while (m_current_char != '\0' && std::isdigit(m_current_char))
-	{
-		result += m_current_char;
-		advance();
-	}
-	if (m_current_char == '.')
-	{
-		result += m_current_char;
-		advance();
-		while (m_current_char != '\0' && std::isdigit(m_current_char))
-		{
-			result += m_current_char;
-			advance();
-		}
-		return Token(LITERAL, { { "data_type", "float" }, { "value", result } });
-	}
-	return Token(LITERAL, { { "data_type", "integer" }, { "value", result } });
-}
-
-TokenResult Lexer::tokenize_special_char()
-{
-	char special = m_current_char;
-	advance();
-	return Token(m_special_chars.at(special), {});
-}
-
-TokenResult Lexer::tokenize_char()
-{
-	//TODO Better error handling for ex 'long char' and other stuff
-
-	std::string result = "";
-	advance(); // Skip the first '
-	if (m_current_char != '\0' && m_current_char != '\'')
-	{
-		result += m_current_char;
-		advance();
-	}
-	advance(); // Skip the last '
-	return Token(LITERAL, { { "data_type", "char" }, { "value", result } }); //TODO: Store this as number?
-}
-
-TokenResult Lexer::tokenize_string()
-{
-	std::string result = "";
-	advance(); // Skip the first "
-	while (m_current_char != '\0' && m_current_char != '"')
-	{
-		result += m_current_char;
-		advance();
-	}
-	advance(); // Skip the last "
-	return Token(LITERAL, { { "data_type", "string" }, { "value", result } });
+	return Token(LITERAL, { { "data_type", "integer" }, { "value", value } });
 }
