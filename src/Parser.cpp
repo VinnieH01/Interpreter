@@ -25,7 +25,7 @@ const Token& Parser::peek(size_t n)
 	{
 		return (*m_tokens)[m_index + n];
 	}
-	return Token{ EOF_TOKEN, {} };
+	return Token{ TokenType::EOF_TOKEN, {} };
 }
 
 void Parser::save_index()
@@ -52,7 +52,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 	std::vector<const char*> errors;
 	std::vector<std::unique_ptr<ASTNode>> stmts;
 
-	while (m_current_token->type != EOF_TOKEN)
+	while (m_current_token->type != TokenType::EOF_TOKEN)
 	{
 		ParseRes res = parse_stmt();
 		if (res.is_error())
@@ -61,13 +61,13 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 
 			//If it's an error we will move to the next statement
 			//this is to ensure correct parsing and error reporting of future statements
-			while (m_current_token->is_not(SPECIAL_CHAR, ";") && m_current_token->type != EOF_TOKEN)
+			while (m_current_token->is_not(TokenType::SPECIAL_CHAR, ";") && m_current_token->type != TokenType::EOF_TOKEN)
 				advance();
 		}
 		else
 			stmts.push_back(std::unique_ptr<ASTNode>(*res));
 
-		if (m_current_token->is_not(SPECIAL_CHAR, ";"))
+		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, ";"))
 		{
 			errors.push_back("Expected ';' after statement");
 		}
@@ -81,7 +81,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 
 ParseRes Parser::parse_stmt()
 {
-	if (m_current_token->is(KEYWORD, "let"))
+	if (m_current_token->is(TokenType::KEYWORD, "let"))
 	{
 		return parse_let();
 	}
@@ -94,12 +94,12 @@ ParseRes Parser::parse_stmt()
 ParseRes Parser::parse_let()
 {
 	advance();
-	if (m_current_token->type != IDENTIFIER)
+	if (m_current_token->type != TokenType::IDENTIFIER)
 		return "Expected identifier after 'let'";
 	std::string name = m_current_token->get_string("name");
 
 	advance();
-	if (m_current_token->is_not(OPERATOR, ":="))
+	if (m_current_token->is_not(TokenType::OPERATOR, ":="))
 		return "Expected assignement operator ':=' after identifier";
 
 	advance();
@@ -134,7 +134,7 @@ ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& operand_pars
 
 	std::unique_ptr<ASTNode> lhs(*lhs_res);
 
-	while (m_current_token->type == OPERATOR && std::find(operators.begin(), operators.end(), m_current_token->get_string("value")) != operators.end())
+	while (m_current_token->type == TokenType::OPERATOR && std::find(operators.begin(), operators.end(), m_current_token->get_string("value")) != operators.end())
 	{
 		const std::string& op = m_current_token->get_string("value");
 		advance();
@@ -152,7 +152,7 @@ ParseRes Parser::parse_unary()
 {
 	const Token& tok = *m_current_token;
 
-	if (m_current_token->type == OPERATOR && (
+	if (m_current_token->type == TokenType::OPERATOR && (
 		m_current_token->get_string("value") == "+" ||
 		m_current_token->get_string("value") == "-"))
 	{
@@ -172,7 +172,7 @@ ParseRes Parser::parse_primary()
 {
 	const Token& tok = *m_current_token;
 
-	if (tok.type == LITERAL)
+	if (tok.type == TokenType::LITERAL)
 	{
 		if (tok.get_string("data_type") == "integer")
 		{
@@ -191,15 +191,15 @@ ParseRes Parser::parse_primary()
 		}
 		return "Only number literals supported";
 	}
-	else if (tok.type == IDENTIFIER)
+	else if (tok.type == TokenType::IDENTIFIER)
 	{
 		advance();
 		return new ASTIdentifierNode(tok.get_string("name"));
 	}
-	else if (tok.type == TYPE) 
+	else if (tok.type == TokenType::TYPE)
 	{
 		advance();
-		if (m_current_token->is_not(SPECIAL_CHAR, "["))
+		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, "["))
 			return "Expected '[' after type in array initialisation";
 		advance();
 
@@ -208,7 +208,7 @@ ParseRes Parser::parse_primary()
 			return expr_res;
 		std::unique_ptr<ASTNode> expr(*expr_res);
 
-		if (m_current_token->is_not(SPECIAL_CHAR, "]"))
+		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, "]"))
 			return "Expected ']' after array initialisation";
 		advance();
 
@@ -217,7 +217,7 @@ ParseRes Parser::parse_primary()
 			                        dtype == "float" ? ArrayType::FLOAT :
 									ArrayType::CHAR, expr.release());
 	}
-	else if (m_current_token->is(SPECIAL_CHAR, "("))
+	else if (m_current_token->is(TokenType::SPECIAL_CHAR, "("))
 	{
 		advance();
 
@@ -227,7 +227,7 @@ ParseRes Parser::parse_primary()
 
 		std::unique_ptr<ASTNode> expr(*expr_res);
 
-		if (m_current_token->is_not(SPECIAL_CHAR, ")"))
+		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, ")"))
 			return "Expected ')' in parenthesised expression";
 		advance();
 

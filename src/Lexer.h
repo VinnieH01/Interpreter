@@ -8,7 +8,7 @@
 #include "Result.h"
 #include <regex>
 
-enum TokenType
+enum class TokenType
 {
 	EOF_TOKEN,
 	SPECIAL_CHAR,
@@ -32,11 +32,11 @@ struct Token
 	{
 		if (m_meta.empty())
 		{
-			std::cout << type;
+			std::cout << (int)type;
 		}
 		else
 		{
-			std::cout << type << " [";
+			std::cout << (int)type << " [";
 			for (const auto& entry : m_meta)
 			{
 				std::cout << "'" << entry.first << "'" << ":" << " '" << entry.second << "', ";
@@ -89,16 +89,26 @@ private:
 	Token tokenize_text(const std::string& value);
 	Token tokenize_number(const std::string& value);
 
-	const std::vector<std::pair<std::string, std::regex>> m_token_patterns
+	enum 
+	{
+		WHITESPACE,
+		NUMBER,
+		TEXT,
+		CHAR_LITERAL,
+		OPERATOR,
+		SPECIAL
+	};
+
+	const std::vector<std::pair<int, std::regex>> m_token_patterns
 	{
 		//Important that these start with ^
 
-		{ "WHITESPACE", std::regex("^\\s+")},
-		{ "NUMBER", std::regex("^[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?")},
-		{ "TEXT", std::regex("^[a-zA-Z_]\\w*")},
-		{ "CHAR_LITERAL", std::regex("^'(.)'")},
-		{ "OPERATOR", std::regex("^[+\\-*\\/]|^:=")},
-		{ "SPECIAL", std::regex("^[;()\\[\\]]")},
+		{ WHITESPACE, std::regex("^\\s+")},
+		{ NUMBER, std::regex("^[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?")},
+		{ TEXT, std::regex("^[a-zA-Z_]\\w*")},
+		{ CHAR_LITERAL, std::regex("^'(.)'")},
+		{ OPERATOR, std::regex("^[+\\-*\\/]|^:=")},
+		{ SPECIAL, std::regex("^[;()\\[\\]]")},
 	};
 
 	const std::vector<std::string> m_keywords
