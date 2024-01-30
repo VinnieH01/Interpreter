@@ -20,11 +20,11 @@ Result<std::vector<Token>, size_t> Lexer::tokenize(std::string text)
 				const std::string& value = match[0];
 				if (pattern.first != "WHITESPACE")
 				{
-					if      (pattern.first == "NUMBER") tokens.push_back(tokenize_number(value));
+					if (pattern.first == "NUMBER") tokens.push_back(tokenize_number(value));
 					else if (pattern.first == "TEXT") tokens.push_back(tokenize_text(value));
-					else if (pattern.first == "CHAR_LITERAL") tokens.push_back(Token(LITERAL, { { "data_type", "char" }, { "value", match[1]}}));
-					else if (pattern.first == "OPERATOR") tokens.push_back(Token(OPERATOR, { { "operator", value } }));
-					else if (pattern.first == "SPECIAL") tokens.push_back(Token(m_special_chars.at(value[0]), {}));
+					else if (pattern.first == "CHAR_LITERAL") tokens.push_back(Token(LITERAL, { { "data_type", "char" }, { "value", match[1]} }));
+					else if (pattern.first == "OPERATOR") tokens.push_back(Token(OPERATOR, { { "value", value } }));
+					else if (pattern.first == "SPECIAL") tokens.push_back(Token(SPECIAL_CHAR, { { "value", value } }));
 				}
 				text = text.substr(value.size());
 				cntr += value.size();
@@ -41,13 +41,13 @@ Result<std::vector<Token>, size_t> Lexer::tokenize(std::string text)
 
 Token Lexer::tokenize_text(const std::string& value)
 {
-	if (m_keywords.find(value) != m_keywords.end())
+	if (std::find(m_keywords.begin(), m_keywords.end(), value) != m_keywords.end())
 	{
-		return Token(m_keywords.at(value), {});
+		return Token(KEYWORD, { { "value", value } });
 	}
 	if (std::find(m_types.begin(), m_types.end(), value) != m_types.end())
 	{
-		return Token(TYPE, { { "data_type", value } });
+		return Token(TYPE, { { "value", value } });
 	}
 	return Token(IDENTIFIER, { { "name", value } });
 }

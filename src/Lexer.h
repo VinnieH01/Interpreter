@@ -11,15 +11,11 @@
 enum TokenType
 {
 	EOF_TOKEN,
-	SEMICOLON,
+	SPECIAL_CHAR,
 	IDENTIFIER,
 	LITERAL,
 	OPERATOR,
-	LET,
-	LPAR,
-	RPAR,
-	LBRACKET,
-	RBRACKET,
+	KEYWORD,
 	TYPE
 };
 
@@ -49,7 +45,10 @@ struct Token
 		}
 	}
 
-	inline const std::string& operator[](const std::string& key) const { return m_meta.at(key); }
+	inline const std::string& get_string(const std::string& key) const 
+	{
+		return m_meta.at(key); 
+	}
 
 	inline int get_int(const std::string& key) const
 	{
@@ -64,6 +63,17 @@ struct Token
 	inline char get_char(const std::string& key) const
 	{
 		return m_meta.at(key).c_str()[0];
+	}
+
+	inline bool is(TokenType type, const std::string& value) const
+	{
+		return this->type == type && m_meta.count("value") && m_meta.at("value") == value;
+	}
+
+	//This only exists beacause it's clearer than saying !tok.is(...)
+	inline bool is_not(TokenType type, const std::string& value) const
+	{
+		return !is(type, value);
 	}
 
 private:
@@ -81,6 +91,8 @@ private:
 
 	const std::vector<std::pair<std::string, std::regex>> m_token_patterns
 	{
+		//Important that these start with ^
+
 		{ "WHITESPACE", std::regex("^\\s+")},
 		{ "NUMBER", std::regex("^[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?")},
 		{ "TEXT", std::regex("^[a-zA-Z_]\\w*")},
@@ -89,32 +101,13 @@ private:
 		{ "SPECIAL", std::regex("^[;()\\[\\]]")},
 	};
 
-	const std::unordered_map<std::string, TokenType> m_keywords
+	const std::vector<std::string> m_keywords
 	{
-		{ "let", LET },
+		"let"
 	};
 
 	const std::vector<std::string> m_types
 	{
 		"int", "float", "char"
-	};
-
-	const std::unordered_map<char, TokenType> m_special_chars
-	{
-		{ ';', SEMICOLON },
-		{ '(', LPAR },
-		{ ')', RPAR },
-		{ '[', LBRACKET },
-		{ ']', RBRACKET },
-	};
-
-	const std::vector<char> m_operator_constituents
-	{
-		'+', '-', '*', ':', '/', '='
-	};
-
-	const std::vector<std::string> m_operators
-	{
-		"+", "-", "*", ":=", "/"
 	};
 };
