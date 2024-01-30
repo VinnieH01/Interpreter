@@ -104,10 +104,10 @@ private:
 		//Important that these start with ^
 
 		{ WHITESPACE, std::regex("^\\s+")},
-		{ NUMBER, std::regex("^[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?")},
+		{ NUMBER, std::regex("^[0-9]*\\.?[0-9]+")},
 		{ TEXT, std::regex("^[a-zA-Z_]\\w*")},
 		{ CHAR_LITERAL, std::regex("^'(.)'")},
-		{ OPERATOR, std::regex("^[+\\-*\\/]|^:=")},
+		{ OPERATOR, std::regex("^(?:[+\\-*\\/]|:=)")},
 		{ SPECIAL, std::regex("^[;()\\[\\]]")},
 	};
 
