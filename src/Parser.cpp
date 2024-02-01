@@ -171,56 +171,27 @@ ParseRes Parser::parse_unary()
 ParseRes Parser::parse_primary()
 {
 	const Token& tok = *m_current_token;
+	advance();
 
 	if (tok.type == TokenType::LITERAL)
 	{
 		if (tok.get_string("data_type") == "integer")
-		{
-			advance();
 			return new ASTLiteralNode(tok.get_int("value"));
-		}
+
 		if (tok.get_string("data_type") == "float")
-		{
-			advance();
 			return new ASTLiteralNode(tok.get_float("value"));
-		}
+
 		if (tok.get_string("data_type") == "char")
-		{
-			advance();
 			return new ASTLiteralNode(tok.get_char("value"));
-		}
+
 		return "Only number literals supported";
 	}
 	else if (tok.type == TokenType::IDENTIFIER)
 	{
-		advance();
 		return new ASTIdentifierNode(tok.get_string("name"));
 	}
-	else if (tok.type == TokenType::TYPE)
+	else if (tok.is(TokenType::SPECIAL_CHAR, "("))
 	{
-		advance();
-		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, "["))
-			return "Expected '[' after type in array initialisation";
-		advance();
-
-		ParseRes expr_res = parse_expr();
-		if (expr_res.is_error())
-			return expr_res;
-		std::unique_ptr<ASTNode> expr(*expr_res);
-
-		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, "]"))
-			return "Expected ']' after array initialisation";
-		advance();
-
-		const std::string& dtype = tok.get_string("value");
-		return new ASTArrayInitNode(dtype == "int" ? ArrayType::INT : 
-			                        dtype == "float" ? ArrayType::FLOAT :
-									ArrayType::CHAR, expr.release());
-	}
-	else if (m_current_token->is(TokenType::SPECIAL_CHAR, "("))
-	{
-		advance();
-
 		ParseRes expr_res = parse_expr();
 		if (expr_res.is_error())
 			return expr_res;

@@ -1,5 +1,6 @@
 #include "Interpreter.h"
 #include "AST.h"
+#include "Value.h"
 
 InterpreterResult Interpreter::interpret(const ASTNode& node)
 {
@@ -8,30 +9,7 @@ InterpreterResult Interpreter::interpret(const ASTNode& node)
 
 InterpreterResult Interpreter::visit(const ASTLiteralNode& node)
 {
-	const auto& literal_value = node.get_value();
-	
-	switch (literal_value.index())
-	{
-	case 0:
-		return Value(std::get<0>(literal_value));
-	case 1:
-		return Value(std::get<1>(literal_value));
-	case 2:
-		return Value(std::get<2>(literal_value));
-	}
-}
-
-InterpreterResult Interpreter::visit(const ASTArrayInitNode& node)
-{
-	InterpreterResult size_expr_res = node.get_size_expr()->accept(*this);
-	if (size_expr_res.is_error())
-		return size_expr_res;
-
-	const Value& size = *size_expr_res;
-	if (!std::holds_alternative<int>(size))
-		return "Array can only be initialised with integer size";
-
-	return Value(Array(node.get_type(), std::get<int>(size)));
+	return node.get_value();
 }
 
 InterpreterResult Interpreter::visit(const ASTIdentifierNode& node)
@@ -39,36 +17,59 @@ InterpreterResult Interpreter::visit(const ASTIdentifierNode& node)
 	if (m_symbol_table.find(node.get_name()) == m_symbol_table.end())
 		return "Symbol does not exist error";
 
-	return Value(m_symbol_table.at(node.get_name()));
+	return m_symbol_table.at(node.get_name());
 }
 
 InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 {
 	InterpreterResult operand_res = node.get_operand()->accept(*this);
-	if (operand_res.is_error()) return operand_res;
+	if (operand_res.is_error()) 
+		return operand_res;
 
-	const Value& operand = *operand_res;
+	Value* operand = (*operand_res).get();
 
-	switch (operand.index())
-	{
-	case 0:
-		return Value(std::get<0>(operand) * (node.get_operator() == "-" ? -1 : 1));
-	case 1:
-		return Value(std::get<1>(operand) * (node.get_operator() == "-" ? -1 : 1));
-	case 2:
-		return Value(std::get<2>(operand) * (node.get_operator() == "-" ? -1 : 1));
-	}
+	int mult = (node.get_operator() == "-" ? -1 : 1);
+
+	if (auto* val = dynamic_cast<NumberValue<int>*>(operand))
+		return { std::make_shared<NumberValue<int>>((*val) * mult)};
+
+	if (auto* val = dynamic_cast<NumberValue<float>*>(operand))
+		return { std::make_shared<NumberValue<float>>((*val) * mult) };
+
+	if (auto* val = dynamic_cast<NumberValue<char>*>(operand))
+		return { std::make_shared<NumberValue<char>>((*val) * mult) };
+
+#undef apply_unary
+
 }
 
-template<int index>
-InterpreterResult binary_operation_helper(const Value& lhs, const Value& rhs, const std::string& op)
+template<typename T, typename T2>
+bool number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out)
 {
-	if (op == "+") return Value(std::get<index>(lhs) + std::get<index>(rhs));
-	if (op == "-") return Value(std::get<index>(lhs) - std::get<index>(rhs));
-	if (op == "*") return Value(std::get<index>(lhs) * std::get<index>(rhs));
-	if (op == "/") return Value(std::get<index>(lhs) / std::get<index>(rhs));
+	if (auto* val = dynamic_cast<NumberValue<T>*>(lhs))
+	{
+		if (auto* val2 = dynamic_cast<NumberValue<T2>*>(rhs))
+		{
+			if (op == "+")
+			{
+				out = std::make_shared<NumberValue<T>>(val->value + val2->value);
+			}
+			else if (op == "-")
+			{
+				out = std::make_shared<NumberValue<T>>(val->value - val2->value);
+			}
+			else if (op == "*")
+			{
+				out = std::make_shared<NumberValue<T>>(val->value * val2->value);
+			}
+			else if (op == "/")
+			{
+				out = std::make_shared<NumberValue<T>>(val->value / val2->value);
+			}
+		}
+	}
 
-	return "Unsupported binary operator";
+	return out.get() != nullptr;
 };
 
 InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
@@ -79,23 +80,19 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 	InterpreterResult rhs_res = node.get_rhs()->accept(*this);
 	if (rhs_res.is_error()) return rhs_res.get_error();
 
-	const auto& lhs = *lhs_res;
-	const auto& rhs = *rhs_res;
+	Value* lhs = (*lhs_res).get();
+	Value* rhs = (*rhs_res).get();
 
 	const std::string& op = node.get_operator();
 
-	if (lhs.index() != rhs.index())
-		return "Incompatible types in binary operation";
+	std::shared_ptr<Value> value(nullptr);
 
-	switch (lhs.index())
-	{
-	case 0:
-		return binary_operation_helper<0>(lhs, rhs, op);
-	case 1:
-		return binary_operation_helper<1>(lhs, rhs, op);
-	case 2:
-		return binary_operation_helper<2>(lhs, rhs, op);
-	}
+	if (number_op<int, int>(lhs, rhs, op, value)) 
+		return value;
+	if (number_op<float, float>(lhs, rhs, op, value))
+		return value;
+	if (number_op<char, char>(lhs, rhs, op, value))
+		return value;
 
 	return "Incompatible types in binary operation";
 }

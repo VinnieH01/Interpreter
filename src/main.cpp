@@ -53,6 +53,7 @@ int main()
 
 		for (int i = 0; i < tree.size() - 1; ++i)
 		{
+			tree[i]->print();
 			const auto& res = interpreter.interpret(*tree[i]);
 			if (res.is_error()) std::cout << res.get_error() << std::endl;
 		}
@@ -61,21 +62,7 @@ int main()
 		if (res.is_error()) std::cout << res.get_error() << std::endl;
 		else if (res.has_value()) 
 		{
-			switch ((*res).index())
-			{
-			case 0:
-				std::cout << "Output: " << std::get<0>(*res) << std::endl;
-				break;
-			case 1:
-				std::cout << "Output: " << std::get<1>(*res) << std::endl;
-				break;
-			case 2:
-				std::cout << "Output: " << std::get<2>(*res) << std::endl;
-				break;
-			case 3:
-				std::cout << "Output: " << "Array" << (int)(std::get<3>(*res).get_type()) 
-					<< "*" << std::get<3>(*res).get_size() << std::endl;
-			}
+			std::cout << "Output: " << **res << std::endl;
 		}
 
 	}

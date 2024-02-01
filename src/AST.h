@@ -9,12 +9,9 @@
 #include "ASTVisitor.h"
 
 #include "Result.h"
-#include <variant>
+#include "Value.h"
 
-#include "Array.h"
-
-using Value = std::variant<int, float, char, Array>;
-using InterpreterResult = Result<Value, const char*>;
+using InterpreterResult = Result<std::shared_ptr<Value>, const char*>;
 
 class ASTNode
 {
@@ -26,10 +23,12 @@ public:
 class ASTLiteralNode : public ASTNode 
 { 
 public: 
-	ASTLiteralNode(const std::variant<int, float, char>& value)
-		: m_value(value) 
-	{} 
-	inline const std::variant<int, float, char>& get_value() const { return m_value; } 
+	template<typename T>
+	ASTLiteralNode(T value)
+	{
+		m_value = std::make_shared<NumberValue<T>>(value);
+	} 
+	inline const std::shared_ptr<Value>& get_value() const { return m_value; }
 	inline virtual void print() const override 
 	{ 
 		//TODO: Print correctly std::cout << "{Literal: " << m_value << "}"; 
@@ -42,36 +41,8 @@ public:
 		return visitor.visit(*this); 
 	} 
 private: 
-	std::variant<int, float, char> m_value; 
+	std::shared_ptr<Value> m_value; 
 };  
-
-class ASTArrayInitNode : public ASTNode
-{
-public:
-	ASTArrayInitNode(ArrayType data_type, ASTNode* size_expr)
-		: m_data_type(data_type)
-		, m_size_expr(size_expr)
-	{}
-
-	inline const std::unique_ptr<ASTNode>& get_size_expr() const { return m_size_expr; }
-	inline ArrayType get_type() const { return m_data_type; }
-
-	inline virtual void print() const override
-	{
-		std::cout << "{Array: " << (int)m_data_type << "*";
-		m_size_expr->print();
-		std::cout << "}";
-	}
-
-	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
-	{
-		return visitor.visit(*this);
-	}
-
-private:
-	const ArrayType m_data_type;
-	const std::unique_ptr<ASTNode> m_size_expr;
-};
 
 class ASTIdentifierNode : public ASTNode
 {

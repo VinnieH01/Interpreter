@@ -1,5 +1,5 @@
-stmt            -> LET IDENTIFIER ":=" expr SEMICOLON
-                -> expr SEMICOLON
+stmt            -> "let" IDENTIFIER ":=" expr ";"
+                -> expr ";"
 
 expr            -> sum
 
@@ -12,5 +12,4 @@ unary           -> ("+"|"-") unary
 
 primary         -> LITERAL
                 -> IDENTIFIER
-                -> LPAR expr RPAR
-                -> TYPE LBRACKET expr RBRACKET //Array creation
+                -> "( expr ")"
