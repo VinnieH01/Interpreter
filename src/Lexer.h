@@ -95,6 +95,7 @@ private:
 		NUMBER,
 		TEXT,
 		CHAR_LITERAL,
+		STRING_LITERAL,
 		OPERATOR,
 		SPECIAL
 	};
@@ -107,6 +108,7 @@ private:
 		{ NUMBER, std::regex("^[0-9]*\\.?[0-9]+")},
 		{ TEXT, std::regex("^[a-zA-Z_]\\w*")},
 		{ CHAR_LITERAL, std::regex("^'(.)'")},
+		{ STRING_LITERAL, std::regex("^\"([^\"]+)\"")},
 		{ OPERATOR, std::regex("^(?:[+\\-*\\/]|:=)")},
 		{ SPECIAL, std::regex("^[;()\\[\\]]")},
 	};

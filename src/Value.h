@@ -31,20 +31,15 @@ public:
 	}
 };
 
-/*template<typename T>
-class ArrayValue : public Value
+class StringValue : public Value
 {
 public:
-	inline ArrayValue(size_t size)
-		: m_size(size)
+	inline StringValue(const std::string& text)
+		: text(text) {}
+	std::string text;
+
+	void print(std::ostream& stream) const override
 	{
-		m_ptr = std::shared_ptr<Value>(new T[size], std::default_delete<T[]>());
+		stream << text;
 	}
-
-	inline size_t get_size() const { return m_size; }
-	inline Value* get() const { return m_ptr.get(); }
-
-private:
-	std::shared_ptr<Value> m_ptr;
-	size_t m_size;
-};*/
+};

@@ -39,8 +39,7 @@ InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 	if (auto* val = dynamic_cast<NumberValue<char>*>(operand))
 		return { std::make_shared<NumberValue<char>>((*val) * mult) };
 
-#undef apply_unary
-
+	return "Unsupported unary operation";
 }
 
 template<typename T, typename T2>
@@ -93,6 +92,17 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 		return value;
 	if (number_op<char, char>(lhs, rhs, op, value))
 		return value;
+
+	if (op == "+") 
+	{
+		if (auto* str = dynamic_cast<StringValue*>(lhs))
+		{
+			if (auto* str2 = dynamic_cast<StringValue*>(rhs))
+			{
+				return { std::make_shared<StringValue>(str->text + str2->text) };
+			}
+		}
+	}
 
 	return "Incompatible types in binary operation";
 }

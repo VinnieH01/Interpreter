@@ -184,6 +184,9 @@ ParseRes Parser::parse_primary()
 		if (tok.get_string("data_type") == "char")
 			return new ASTLiteralNode(tok.get_char("value"));
 
+		if (tok.get_string("data_type") == "string")
+			return new ASTLiteralNode(tok.get_string("value"));
+
 		return "Only number literals supported";
 	}
 	else if (tok.type == TokenType::IDENTIFIER)

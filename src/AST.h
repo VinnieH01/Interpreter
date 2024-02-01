@@ -28,6 +28,12 @@ public:
 	{
 		m_value = std::make_shared<NumberValue<T>>(value);
 	} 
+
+	ASTLiteralNode(const std::string value)
+	{
+		m_value = std::make_shared<StringValue>(value);
+	}
+
 	inline const std::shared_ptr<Value>& get_value() const { return m_value; }
 	inline virtual void print() const override 
 	{ 

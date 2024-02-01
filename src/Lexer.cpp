@@ -28,6 +28,8 @@ Result<std::vector<Token>, size_t> Lexer::tokenize(std::string text)
 						break;
 					case CHAR_LITERAL: tokens.push_back(Token(TokenType::LITERAL, { { "data_type", "char" }, { "value", match[1]} }));
 						break;
+					case STRING_LITERAL: tokens.push_back(Token(TokenType::LITERAL, { { "data_type", "string" }, { "value", match[1]} }));
+						break;
 					case OPERATOR: tokens.push_back(Token(TokenType::OPERATOR, { { "value", value } }));
 						break;
 					case SPECIAL: tokens.push_back(Token(TokenType::SPECIAL_CHAR, { { "value", value } }));
