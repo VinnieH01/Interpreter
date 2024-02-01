@@ -14,12 +14,18 @@ public:
 private:
 	void advance();
 	const Token& peek(size_t n = 1);
+	const Token& prev(size_t n = 1);
 
-	void save_index();
-	void load_index();
+	bool test(const std::initializer_list<std::function<bool()>>& test_functions);
+
+	bool consume(TokenType type, const std::string& v);
+	bool consume(TokenType type);
+	bool consume(TokenType type, const std::string& v, const Token*& tok);
+	bool consume(TokenType type, const Token*& tok);
+	bool test_parse(const std::function<ParseRes()>& parse_fn, ASTNode*& result);
+	bool test_parse(const std::function<ParseRes()>& parse_fn);
 
 	ParseRes parse_stmt();
-	ParseRes parse_let();
 	ParseRes parse_expr();
 
 	ParseRes parse_sum();
@@ -32,5 +38,4 @@ private:
 	const std::vector<Token>* m_tokens;
 	size_t m_index;
 	const Token* m_current_token;
-	size_t m_saved_index;
 };

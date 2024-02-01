@@ -4,7 +4,6 @@
 
 Parser::Parser()
 	: m_index(0)
-	, m_saved_index(0)
 	, m_current_token(nullptr)
 	, m_tokens(nullptr)
 {
@@ -28,18 +27,79 @@ const Token& Parser::peek(size_t n)
 	return Token{ TokenType::EOF_TOKEN, {} };
 }
 
-void Parser::save_index()
+const Token& Parser::prev(size_t n)
 {
-	m_saved_index = m_index;
+	if (m_index - n >= 0)
+	{
+		return (*m_tokens)[m_index - n];
+	}
+	return Token{ TokenType::EOF_TOKEN, {} };
 }
 
-void Parser::load_index()
+bool Parser::test(const std::initializer_list<std::function<bool()>>& test_functions)
 {
-	m_index = m_saved_index;
-	m_current_token = &(*m_tokens)[m_index];
+	int saved_idx = m_index;
+
+	bool result = true;
+
+	for (auto& func : test_functions) 
+	{
+		result = result && func();
+		if (!result) 
+		{
+			m_index = saved_idx;
+			m_current_token = &(*m_tokens)[m_index];
+			return false; 
+		}
+	}
+
+	return true;
 }
 
-using ParseRes = Result<ASTNode*, const char*>;
+bool Parser::consume(TokenType type, const std::string& v)
+{
+	bool result = m_current_token->is(type, v);
+	if (result) advance();
+	return result;
+}
+
+bool Parser::consume(TokenType type)
+{
+	bool result = m_current_token->type == type;
+	if (result) advance();
+	return result;
+}
+
+bool Parser::consume(TokenType type, const std::string& v, const Token*& tok)
+{
+	bool result = consume(type, v);
+	if (result) tok = &prev();
+	return result;
+}
+
+bool Parser::consume(TokenType type, const Token*& tok)
+{
+	bool result = consume(type);
+	if (result) tok = &prev();
+	return result;
+}
+
+bool Parser::test_parse(const std::function<ParseRes()>& parse_fn, ASTNode*& result)
+{
+	ParseRes res = parse_fn();
+	if (res.is_error())
+		return false;
+	result = *res;
+	return true;
+}
+
+bool Parser::test_parse(const std::function<ParseRes()>& parse_fn)
+{
+	ASTNode* node = nullptr;
+	bool res = test_parse(parse_fn, node);
+	delete node;
+	return res;
+}
 
 Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::parse(const std::vector<Token>& tokens)
 {
@@ -47,7 +107,6 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 	m_current_token = &(*m_tokens)[0];
 
 	m_index = 0;
-	m_saved_index = 0;
 
 	std::vector<const char*> errors;
 	std::vector<std::unique_ptr<ASTNode>> stmts;
@@ -79,36 +138,25 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 	return stmts;
 }
 
+using ParseRes = Result<ASTNode*, const char*>;
+
 ParseRes Parser::parse_stmt()
 {
-	if (m_current_token->is(TokenType::KEYWORD, "let"))
+	//"let" IDENTIFIER ":=" expr
+	ASTNode* expr = nullptr;
+	const Token* identifier = nullptr;
+	if (test({
+		[this]() { return consume(TokenType::KEYWORD, "let"); },
+		[&]() { return consume(TokenType::IDENTIFIER, identifier); },
+		[this]() { return consume(TokenType::OPERATOR, ":="); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), expr); }
+	}))
 	{
-		return parse_let();
+		return new ASTLetNode(identifier->get_string("name"), expr);
 	}
-	else
-	{
-		return parse_expr();
-	}
-}
 
-ParseRes Parser::parse_let()
-{
-	advance();
-	if (m_current_token->type != TokenType::IDENTIFIER)
-		return "Expected identifier after 'let'";
-	std::string name = m_current_token->get_string("name");
-
-	advance();
-	if (m_current_token->is_not(TokenType::OPERATOR, ":="))
-		return "Expected assignement operator ':=' after identifier";
-
-	advance();
-
-	ParseRes expr_res = parse_expr();
-	if (expr_res.is_error())
-		return expr_res;
-
-	return new ASTLetNode(name, *expr_res);
+	//expr
+	return parse_expr();
 }
 
 ParseRes Parser::parse_expr()
@@ -150,62 +198,51 @@ ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& operand_pars
 
 ParseRes Parser::parse_unary()
 {
-	const Token& tok = *m_current_token;
-
-	if (m_current_token->type == TokenType::OPERATOR && (
-		m_current_token->get_string("value") == "+" ||
-		m_current_token->get_string("value") == "-"))
+	// "-" unary
+	ASTNode* unary = nullptr;
+	if (test({
+		[this]() { return consume(TokenType::OPERATOR, "-"); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), unary); },
+	}))
 	{
-		advance();
-
-		ParseRes unary_res = parse_unary();
-		if (unary_res.is_error())
-			return unary_res;
-
-		return new ASTUnaryNode(tok.get_string("value"), *unary_res);
+		return new ASTUnaryNode("-", unary);
 	}
 
+	//primary
 	return parse_primary();
 }
 
 ParseRes Parser::parse_primary()
 {
-	const Token& tok = *m_current_token;
-	advance();
-
-	if (tok.type == TokenType::LITERAL)
+	// LITERAL
+	if (consume(TokenType::LITERAL))
 	{
-		if (tok.get_string("data_type") == "integer")
-			return new ASTLiteralNode(tok.get_int("value"));
+		if (prev().get_string("data_type") == "integer")
+			return new ASTLiteralNode(prev().get_int("value"));
 
-		if (tok.get_string("data_type") == "float")
-			return new ASTLiteralNode(tok.get_float("value"));
+		if (prev().get_string("data_type") == "float")
+			return new ASTLiteralNode(prev().get_float("value"));
 
-		if (tok.get_string("data_type") == "char")
-			return new ASTLiteralNode(tok.get_char("value"));
+		if (prev().get_string("data_type") == "char")
+			return new ASTLiteralNode(prev().get_char("value"));
 
-		if (tok.get_string("data_type") == "string")
-			return new ASTLiteralNode(tok.get_string("value"));
-
-		return "Only number literals supported";
+		if (prev().get_string("data_type") == "string")
+			return new ASTLiteralNode(prev().get_string("value"));
 	}
-	else if (tok.type == TokenType::IDENTIFIER)
+
+	// IDENTIFIER
+	if (consume(TokenType::IDENTIFIER))
+		return new ASTIdentifierNode(prev().get_string("name"));
+	
+	// "(" expr ")"
+	ASTNode* expr = nullptr;
+	if(test({
+		[this]() { return consume(TokenType::SPECIAL_CHAR, "("); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), expr); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, ")"); }
+	})) 
 	{
-		return new ASTIdentifierNode(tok.get_string("name"));
-	}
-	else if (tok.is(TokenType::SPECIAL_CHAR, "("))
-	{
-		ParseRes expr_res = parse_expr();
-		if (expr_res.is_error())
-			return expr_res;
-
-		std::unique_ptr<ASTNode> expr(*expr_res);
-
-		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, ")"))
-			return "Expected ')' in parenthesised expression";
-		advance();
-
-		return expr.release();
+		return expr;
 	}
 
 	return "Invalid Expression";

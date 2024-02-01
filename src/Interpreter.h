@@ -5,7 +5,6 @@
 #include "ASTVisitor.h"
 #include "AST.h"
 
-//using Value = std::variant<int, float, char, Array>;
 using InterpreterResult = Result<std::shared_ptr<Value>, const char*>;
 
 class Interpreter : public ASTVisitor<InterpreterResult>

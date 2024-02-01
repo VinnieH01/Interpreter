@@ -1,5 +1,7 @@
-stmt            -> "let" IDENTIFIER ":=" expr ";"
-                -> expr ";"
+program         -> (stmt ";")+
+
+stmt            -> "let" IDENTIFIER ":=" expr
+                -> expr
 
 expr            -> sum
 
@@ -7,7 +9,7 @@ sum             -> product (("+"|"-") product)*
 
 product         -> unary (("*"|"/") unary)*
 
-unary           -> ("+"|"-") unary 
+unary           -> "-" unary 
                 -> primary
 
 primary         -> LITERAL
