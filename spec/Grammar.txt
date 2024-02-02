@@ -1,6 +1,7 @@
 program         -> (stmt ";")*
 
 stmt            -> "{" program "}"
+                -> "print" expr
                 -> "let" IDENTIFIER ":=" expr
                 -> "if" "(" expr ")" stmt
                 -> expr

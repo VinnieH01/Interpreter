@@ -157,17 +157,27 @@ ParseRes Parser::parse_stmt()
 		return new ASTBlockNode(std::move(stmts));
 	}
 
+	//"print" expr
+	ASTNode* print_expr = nullptr;
+	if (test({
+		[this]() { return consume(TokenType::KEYWORD, "print"); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), print_expr); }
+		}))
+	{
+		return new ASTPrintNode(print_expr);
+	}
+
 	//"let" IDENTIFIER ":=" expr
-	ASTNode* expr = nullptr;
+	ASTNode* let_expr = nullptr;
 	const Token* identifier = nullptr;
 	if (test({
 		[this]() { return consume(TokenType::KEYWORD, "let"); },
 		[&]() { return consume(TokenType::IDENTIFIER, identifier); },
 		[this]() { return consume(TokenType::OPERATOR, ":="); },
-		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), expr); }
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), let_expr); }
 	}))
 	{
-		return new ASTLetNode(identifier->get_string("name"), expr);
+		return new ASTLetNode(identifier->get_string("name"), let_expr);
 	}
 
 	//"if" "(" expr ")" stmt

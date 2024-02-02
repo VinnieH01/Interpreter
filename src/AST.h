@@ -143,9 +143,26 @@ public:
 	}
 
 private:
-	const std::string m_var_name;
 	const std::unique_ptr<ASTNode> m_condition;
 	const std::unique_ptr<ASTNode> m_stmt;
+};
+
+class ASTPrintNode : public ASTNode
+{
+public:
+	ASTPrintNode(ASTNode* expr)
+		: m_expr(expr)
+	{}
+
+	inline const std::unique_ptr<ASTNode>& get_expr() const { return m_expr; }
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+
+private:
+	const std::unique_ptr<ASTNode> m_expr;
 };
 
 class ASTBlockNode : public ASTNode

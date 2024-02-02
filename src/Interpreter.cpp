@@ -1,6 +1,7 @@
 #include "Interpreter.h"
 #include "AST.h"
 #include "Value.h"
+#include <iostream>
 
 InterpreterResult Interpreter::interpret(const ASTNode& node)
 {
@@ -52,6 +53,28 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 	{
 		return node.get_stmt()->accept(*this);
 	}
+
+	return {};
+}
+
+InterpreterResult Interpreter::visit(const ASTPrintNode& node)
+{
+	InterpreterResult expr_res = node.get_expr()->accept(*this);
+	if (expr_res.is_error())
+		return expr_res;
+
+	Value* value = (*expr_res).get();
+
+	if (auto* val = dynamic_cast<NumberValue<int>*>(value))
+		std::cout << ">> " << val->value << std::endl;
+	else if (auto* val = dynamic_cast<NumberValue<float>*>(value))
+		std::cout << ">> " << val->value << std::endl;
+	else if (auto* val = dynamic_cast<NumberValue<char>*>(value))
+		std::cout << ">> " << val->value << std::endl;
+	else if (auto* val = dynamic_cast<StringValue*>(value))
+		std::cout << ">> " << val->text << std::endl;
+	else
+		return "Unsupported expression in print statement.";
 
 	return {};
 }

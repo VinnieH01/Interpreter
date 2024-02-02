@@ -115,7 +115,7 @@ private:
 
 	const std::vector<std::string> m_keywords
 	{
-		"let", "if"
+		"let", "if", "print"
 	};
 
 	const std::vector<std::string> m_types
