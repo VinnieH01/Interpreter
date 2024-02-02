@@ -126,11 +126,8 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 		else
 			stmts.push_back(std::unique_ptr<ASTNode>(*res));
 
-		if (m_current_token->is_not(TokenType::SPECIAL_CHAR, ";"))
-		{
+		if (!consume(TokenType::SPECIAL_CHAR, ";"))
 			errors.push_back("Expected ';' after statement");
-		}
-		else advance();
 	}
 
 	if (!errors.empty()) 
@@ -142,6 +139,24 @@ using ParseRes = Result<ASTNode*, const char*>;
 
 ParseRes Parser::parse_stmt()
 {
+	//"{" program "}"
+	if (consume(TokenType::SPECIAL_CHAR, "{")) 
+	{
+		std::vector<std::unique_ptr<ASTNode>> stmts;
+		while (!consume(TokenType::SPECIAL_CHAR, "}")) 
+		{
+			ParseRes res = parse_stmt();
+			if (res.is_error())
+				return "error in block";
+			else
+				stmts.push_back(std::unique_ptr<ASTNode>(*res));
+
+			if(!consume(TokenType::SPECIAL_CHAR, ";"))
+				return "Expected ';' after statement";
+		}
+		return new ASTBlockNode(std::move(stmts));
+	}
+
 	//"let" IDENTIFIER ":=" expr
 	ASTNode* expr = nullptr;
 	const Token* identifier = nullptr;
@@ -153,6 +168,20 @@ ParseRes Parser::parse_stmt()
 	}))
 	{
 		return new ASTLetNode(identifier->get_string("name"), expr);
+	}
+
+	//"if" "(" expr ")" stmt
+	ASTNode* conditional_expr = nullptr;
+	ASTNode* body_stmt = nullptr;
+	if (test({
+		[this]() { return consume(TokenType::KEYWORD, "if"); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, "("); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), conditional_expr); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, ")"); },
+		[&]() { return test_parse(std::bind(&Parser::parse_stmt, this), body_stmt); }
+		}))
+	{
+		return new ASTIfNode(conditional_expr, body_stmt);
 	}
 
 	//expr

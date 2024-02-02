@@ -53,7 +53,6 @@ int main()
 
 		for (int i = 0; i < tree.size() - 1; ++i)
 		{
-			tree[i]->print();
 			const auto& res = interpreter.interpret(*tree[i]);
 			if (res.is_error()) std::cout << res.get_error() << std::endl;
 		}

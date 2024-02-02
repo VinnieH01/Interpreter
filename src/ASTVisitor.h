@@ -7,7 +7,9 @@ class ASTVisitor
 public:
 	virtual T visit(const class ASTLiteralNode&) = 0;
 	virtual T visit(const class ASTUnaryNode&) = 0;
+	virtual T visit(const class ASTBlockNode&) = 0;
 	virtual T visit(const class ASTBinaryNode&) = 0;
+	virtual T visit(const class ASTIfNode&) = 0;
 	virtual T visit(const class ASTIdentifierNode&) = 0;
 	virtual T visit(const class ASTLetNode&) = 0;
 };

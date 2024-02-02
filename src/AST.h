@@ -16,7 +16,6 @@ using InterpreterResult = Result<std::shared_ptr<Value>, const char*>;
 class ASTNode
 {
 public:
-	inline virtual void print() const = 0;
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const = 0;
 };
 
@@ -35,13 +34,6 @@ public:
 	}
 
 	inline const std::shared_ptr<Value>& get_value() const { return m_value; }
-	inline virtual void print() const override 
-	{ 
-		//TODO: Print correctly std::cout << "{Literal: " << m_value << "}"; 
-		//Printing is only used for debugging anyway so for now it's fine
-
-		std::cout << "{Literal}";
-	} 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const 
 	{ 
 		return visitor.visit(*this); 
@@ -58,11 +50,6 @@ public:
 	{}
 
 	inline const std::string& get_name() const { return m_name; }
-
-	inline virtual void print() const override
-	{
-		std::cout << "{Identifier: " << m_name << "}";
-	}
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
@@ -83,14 +70,6 @@ public:
 
 	inline const std::string& get_operator() const { return m_operator; }
 	inline const std::unique_ptr<ASTNode>& get_operand() const { return m_operand; }
-
-	inline virtual void print() const override
-	{
-		std::cout << "{Unary: ";
-		std::cout << "operator: " << m_operator << ", operand: ";
-		m_operand->print();
-		std::cout << "}";
-	}
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
@@ -115,16 +94,6 @@ public:
 	inline const std::unique_ptr<ASTNode>& get_lhs() const { return m_lhs; }
 	inline const std::unique_ptr<ASTNode>& get_rhs() const { return m_rhs; }
 
-	inline virtual void print() const override
-	{
-		std::cout << "{Binary: ";
-		std::cout << "operator: " << m_operator << ", operands: ";
-		m_lhs->print();
-		std::cout << ", ";
-		m_rhs->print();
-		std::cout << "}";
-	}
-
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
 		return visitor.visit(*this);
@@ -147,13 +116,6 @@ public:
 	inline const std::string& get_var_name() const { return m_var_name; }
 	inline const std::unique_ptr<ASTNode>& get_expr() const { return m_expr; }
 
-	inline virtual void print() const override
-	{
-		std::cout << "{Let " << m_var_name << " be ";
-		m_expr->print();
-		std::cout << "}";
-	}
-
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
 		return visitor.visit(*this);
@@ -162,4 +124,45 @@ public:
 private:
 	const std::string m_var_name;
 	const std::unique_ptr<ASTNode> m_expr;
+};
+
+class ASTIfNode : public ASTNode
+{
+public:
+	ASTIfNode(ASTNode* condition, ASTNode* stmt)
+		: m_condition(condition)
+		, m_stmt(stmt)
+	{}
+
+	inline const std::unique_ptr<ASTNode>& get_conditon() const { return m_condition; }
+	inline const std::unique_ptr<ASTNode>& get_stmt() const { return m_stmt; }
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+
+private:
+	const std::string m_var_name;
+	const std::unique_ptr<ASTNode> m_condition;
+	const std::unique_ptr<ASTNode> m_stmt;
+};
+
+class ASTBlockNode : public ASTNode
+{
+public:
+	ASTBlockNode(std::vector<std::unique_ptr<ASTNode>> stmts)
+		: m_stmts(std::move(stmts))
+	{}
+
+	inline const std::vector<std::unique_ptr<ASTNode>>& get_stmts() const { return m_stmts; }
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+
+private:
+	const std::string m_var_name;
+	const std::vector<std::unique_ptr<ASTNode>> m_stmts;
 };

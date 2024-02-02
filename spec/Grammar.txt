@@ -1,6 +1,8 @@
-program         -> (stmt ";")+
+program         -> (stmt ";")*
 
-stmt            -> "let" IDENTIFIER ":=" expr
+stmt            -> "{" program "}"
+                -> "let" IDENTIFIER ":=" expr
+                -> "if" "(" expr ")" stmt
                 -> expr
 
 expr            -> sum

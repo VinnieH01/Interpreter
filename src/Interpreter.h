@@ -13,10 +13,14 @@ public:
 	InterpreterResult interpret(const ASTNode&);
 
 	virtual InterpreterResult visit(const ASTLiteralNode&) override;
-	virtual InterpreterResult visit(const ASTIdentifierNode& node) override;
+	virtual InterpreterResult visit(const ASTIdentifierNode&) override;
 	virtual InterpreterResult visit(const ASTUnaryNode&) override;
+	virtual InterpreterResult visit(const ASTIfNode&) override;
 	virtual InterpreterResult visit(const ASTBinaryNode&) override;
+	virtual InterpreterResult visit(const ASTBlockNode&) override;
 	virtual InterpreterResult visit(const ASTLetNode&) override;
 private:
+	bool isTruthy(Value* value);
+
 	std::unordered_map<std::string, std::shared_ptr<Value>> m_symbol_table;
 };

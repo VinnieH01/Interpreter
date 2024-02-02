@@ -42,6 +42,20 @@ InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 	return "Unsupported unary operation";
 }
 
+InterpreterResult Interpreter::visit(const ASTIfNode& node)
+{
+	InterpreterResult condition_res = node.get_conditon()->accept(*this);
+	if (condition_res.is_error())
+		return condition_res;
+
+	if (isTruthy((*condition_res).get()))
+	{
+		return node.get_stmt()->accept(*this);
+	}
+
+	return {};
+}
+
 template<typename T, typename T2>
 bool number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out)
 {
@@ -107,12 +121,37 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 	return "Incompatible types in binary operation";
 }
 
-InterpreterResult Interpreter::visit(const ASTLetNode& node)
+InterpreterResult Interpreter::visit(const ASTBlockNode& node)
 {
-	InterpreterResult expr = node.get_expr()->accept(*this);
-	if (expr.is_error()) return expr.get_error();
-
-	m_symbol_table[node.get_var_name()] = *expr;
+	for (const auto& stmt : node.get_stmts())
+	{
+		InterpreterResult stmt_res = stmt->accept(*this);
+		if (stmt_res.is_error()) 
+			return stmt_res;
+	}
 
 	return {};
+}
+
+InterpreterResult Interpreter::visit(const ASTLetNode& node)
+{
+	InterpreterResult expr_res = node.get_expr()->accept(*this);
+	if (expr_res.is_error()) 
+		return expr_res;
+
+	m_symbol_table[node.get_var_name()] = *expr_res;
+
+	return {};
+}
+
+bool Interpreter::isTruthy(Value* value)
+{
+	if (auto* val = dynamic_cast<NumberValue<int>*>((value)))
+		return *val != 0;
+	if (auto* val = dynamic_cast<NumberValue<float>*>((value)))
+		return *val != 0;
+	if (auto* val = dynamic_cast<NumberValue<char>*>((value)))
+		return *val != 0;
+
+	return false;
 }
