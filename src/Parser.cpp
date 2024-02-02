@@ -190,7 +190,17 @@ ParseRes Parser::parse_stmt()
 
 ParseRes Parser::parse_expr()
 {
-	return parse_sum();
+	return parse_logic();
+}
+
+ParseRes Parser::parse_logic()
+{
+	return parse_binary_expr(std::bind(&Parser::parse_comparison, this), { "&&", "||" });
+}
+
+ParseRes Parser::parse_comparison()
+{
+	return parse_binary_expr(std::bind(&Parser::parse_sum, this), { ">", "<", "==", ">=", "<="});
 }
 
 ParseRes Parser::parse_sum()
@@ -215,7 +225,7 @@ ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& operand_pars
 	{
 		const std::string& op = m_current_token->get_string("value");
 		advance();
-		ParseRes rhs_res = parse_product();
+		ParseRes rhs_res = operand_parse_fn();
 		if (rhs_res.is_error())
 			return rhs_res;
 

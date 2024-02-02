@@ -22,5 +22,8 @@ public:
 private:
 	bool isTruthy(Value* value);
 
+	template<typename T, typename T2>
+	bool number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out);
+
 	std::unordered_map<std::string, std::shared_ptr<Value>> m_symbol_table;
 };

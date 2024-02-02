@@ -5,7 +5,11 @@ stmt            -> "{" program "}"
                 -> "if" "(" expr ")" stmt
                 -> expr
 
-expr            -> sum
+expr            -> logic
+
+logic           -> comparison (("&&"|"||") comparison)*
+
+comparison      -> sum ((">"|"<"|"=="|">="|"<=") sum)*
 
 sum             -> product (("+"|"-") product)*
 

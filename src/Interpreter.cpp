@@ -57,7 +57,7 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 }
 
 template<typename T, typename T2>
-bool number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out)
+bool Interpreter::number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out)
 {
 	if (auto* val = dynamic_cast<NumberValue<T>*>(lhs))
 	{
@@ -78,6 +78,34 @@ bool number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Va
 			else if (op == "/")
 			{
 				out = std::make_shared<NumberValue<T>>(val->value / val2->value);
+			}
+			else if (op == "==")
+			{
+				out = std::make_shared<NumberValue<int>>(val->value == val2->value);
+			}
+			else if (op == "<=")
+			{
+				out = std::make_shared<NumberValue<int>>(val->value <= val2->value);
+			}
+			else if (op == ">=")
+			{
+				out = std::make_shared<NumberValue<int>>(val->value >= val2->value);
+			}
+			else if (op == "<")
+			{
+				out = std::make_shared<NumberValue<int>>(val->value < val2->value);
+			}
+			else if (op == ">")
+			{
+				out = std::make_shared<NumberValue<int>>(val->value > val2->value);
+			}
+			else if (op == "&&")
+			{
+				out = std::make_shared<NumberValue<int>>(isTruthy(val) && isTruthy(val2));
+			}
+			else if (op == "||")
+			{
+				out = std::make_shared<NumberValue<int>>(isTruthy(val) || isTruthy(val2));
 			}
 		}
 	}

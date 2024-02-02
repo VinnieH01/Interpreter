@@ -109,7 +109,7 @@ private:
 		{ TEXT, std::regex("^[a-zA-Z_]\\w*")},
 		{ CHAR_LITERAL, std::regex("^'(.)'")},
 		{ STRING_LITERAL, std::regex("^\"([^\"]+)\"")},
-		{ OPERATOR, std::regex("^(?:[+\\-*\\/]|:=)")},
+		{ OPERATOR, std::regex("^(?::=|&&|\\|\\||>=|<=|==|[+\\-*\\/<>])")},
 		{ SPECIAL, std::regex("^[;()\\[\\]{}]")},
 	};
 

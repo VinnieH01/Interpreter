@@ -28,6 +28,8 @@ private:
 	ParseRes parse_stmt();
 	ParseRes parse_expr();
 
+	ParseRes parse_logic();
+	ParseRes parse_comparison();
 	ParseRes parse_sum();
 	ParseRes parse_product();
 	ParseRes parse_binary_expr(const std::function<ParseRes()>& operand_parse_fn, const std::vector<std::string>& operators);
