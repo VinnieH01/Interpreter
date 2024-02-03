@@ -22,7 +22,7 @@ private:
 	bool consume(TokenType type);
 	bool consume(TokenType type, const std::string& v, const Token*& tok);
 	bool consume(TokenType type, const Token*& tok);
-	bool test_parse(const std::function<ParseRes()>& parse_fn, ASTNode*& result);
+	bool test_parse(const std::function<ParseRes()>& parse_fn, std::unique_ptr<ASTNode>& result);
 	bool test_parse(const std::function<ParseRes()>& parse_fn);
 
 	ParseRes parse_stmt();
