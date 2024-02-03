@@ -8,13 +8,17 @@ stmt            -> "{" program "}"
 
 expr            -> logic
 
-logic           -> comparison (("&&"|"||") comparison)*
+logic           -> comparison ("&&"|"||") logic				
+                -> comparison
 
-comparison      -> sum ((">"|"<"|"=="|">="|"<=") sum)*
+comparison      -> product (">"|"<"|"=="|">="|"<=") sum
+                -> sum
 
-sum             -> product (("+"|"-") product)*
+sum             -> product ("+"|"-") sum
+                -> product
 
-product         -> unary (("*"|"/") unary)*
+product         -> unary ("*"|"/") product
+                -> unary
 
 unary           -> "-" unary 
                 -> primary

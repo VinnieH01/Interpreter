@@ -56,10 +56,24 @@ bool Parser::test(const std::initializer_list<std::function<bool()>>& test_funct
 	return true;
 }
 
-bool Parser::consume(TokenType type, const std::string& v)
+bool Parser::consume(TokenType type, const std::initializer_list<std::string>& values)
 {
-	bool result = m_current_token->is(type, v);
-	if (result) advance();
+	for (const auto& v : values)
+	{
+		if (m_current_token->is(type, v))
+		{
+			advance();
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool Parser::consume(TokenType type, const std::initializer_list<std::string>& values, const Token*& tok)
+{
+	bool result = consume(type, values);
+	if (result) tok = &prev();
 	return result;
 }
 
@@ -67,13 +81,6 @@ bool Parser::consume(TokenType type)
 {
 	bool result = m_current_token->type == type;
 	if (result) advance();
-	return result;
-}
-
-bool Parser::consume(TokenType type, const std::string& v, const Token*& tok)
-{
-	bool result = consume(type, v);
-	if (result) tok = &prev();
 	return result;
 }
 
@@ -127,7 +134,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 		else
 			stmts.push_back(std::unique_ptr<ASTNode>(*res));
 
-		if (!consume(TokenType::SPECIAL_CHAR, ";"))
+		if (!consume(TokenType::SPECIAL_CHAR, { ";" } ))
 			errors.push_back("Expected ';' after statement");
 	}
 
@@ -141,10 +148,10 @@ using ParseRes = Result<ASTNode*, const char*>;
 ParseRes Parser::parse_stmt()
 {
 	//"{" program "}"
-	if (consume(TokenType::SPECIAL_CHAR, "{")) 
+	if (consume(TokenType::SPECIAL_CHAR, { "{" }))
 	{
 		std::vector<std::unique_ptr<ASTNode>> stmts;
-		while (!consume(TokenType::SPECIAL_CHAR, "}")) 
+		while (!consume(TokenType::SPECIAL_CHAR, { "}" }))
 		{
 			ParseRes res = parse_stmt();
 			if (res.is_error())
@@ -152,7 +159,7 @@ ParseRes Parser::parse_stmt()
 			else
 				stmts.push_back(std::unique_ptr<ASTNode>(*res));
 
-			if(!consume(TokenType::SPECIAL_CHAR, ";"))
+			if (!consume(TokenType::SPECIAL_CHAR, { ";" }))
 				return "Expected ';' after statement";
 		}
 		return new ASTBlockNode(std::move(stmts));
@@ -161,7 +168,7 @@ ParseRes Parser::parse_stmt()
 	//"print" expr
 	std::unique_ptr<ASTNode> print_expr;
 	if (test({
-		[this]() { return consume(TokenType::KEYWORD, "print"); },
+		[this]() { return consume(TokenType::KEYWORD, {"print"}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), print_expr); }
 		}))
 	{
@@ -172,9 +179,9 @@ ParseRes Parser::parse_stmt()
 	std::unique_ptr<ASTNode> let_expr;
 	const Token* identifier = nullptr;
 	if (test({
-		[this]() { return consume(TokenType::KEYWORD, "let"); },
+		[this]() { return consume(TokenType::KEYWORD, {"let"}); },
 		[&]() { return consume(TokenType::IDENTIFIER, identifier); },
-		[this]() { return consume(TokenType::OPERATOR, ":="); },
+		[this]() { return consume(TokenType::OPERATOR, {":="}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), let_expr); }
 	}))
 	{
@@ -185,10 +192,10 @@ ParseRes Parser::parse_stmt()
 	std::unique_ptr<ASTNode> conditional_expr;
 	std::unique_ptr<ASTNode> body_stmt;
 	if (test({
-		[this]() { return consume(TokenType::KEYWORD, "if"); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, "("); },
+		[this]() { return consume(TokenType::KEYWORD, {"if"}); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), conditional_expr); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, ")"); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_stmt, this), body_stmt); }
 		}))
 	{
@@ -201,49 +208,55 @@ ParseRes Parser::parse_stmt()
 
 ParseRes Parser::parse_expr()
 {
+	//logic
 	return parse_logic();
 }
 
 ParseRes Parser::parse_logic()
 {
-	return parse_binary_expr(std::bind(&Parser::parse_comparison, this), { "&&", "||" });
+	//comparison ("&&"|"||") logic
+	//comparison
+	return parse_binary_expr(std::bind(&Parser::parse_comparison, this), std::bind(&Parser::parse_logic, this), { "&&", "||" });
 }
 
 ParseRes Parser::parse_comparison()
 {
-	return parse_binary_expr(std::bind(&Parser::parse_sum, this), { ">", "<", "==", ">=", "<="});
+	//sum (">"|"<"|"=="|">="|"<=") comparison
+	//sum
+	return parse_binary_expr(std::bind(&Parser::parse_sum, this), std::bind(&Parser::parse_comparison, this), { ">", "<", "==", ">=", "<=" });
 }
 
 ParseRes Parser::parse_sum()
 {
-	return parse_binary_expr(std::bind(&Parser::parse_product, this), {"+", "-"});
+	//product ("+"|"-") sum
+	//product
+	return parse_binary_expr(std::bind(&Parser::parse_product, this), std::bind(&Parser::parse_sum, this), {"+", "-"});
 }
 
 ParseRes Parser::parse_product()
 {
-	return parse_binary_expr(std::bind(&Parser::parse_unary, this), { "*", "/" });
+	//unary ("*"|"/") product
+	//unary
+	return parse_binary_expr(std::bind(&Parser::parse_unary, this), std::bind(&Parser::parse_product, this), { "*", "/" });
 }
 
-ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& operand_parse_fn, const std::vector<std::string>& operators)
+ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& parse_x, const std::function<ParseRes()>& parse_y, const std::initializer_list<std::string>& operators)
 {
-	ParseRes lhs_res = operand_parse_fn();
-	if (lhs_res.is_error())
-		return lhs_res;
-
-	std::unique_ptr<ASTNode> lhs(*lhs_res);
-
-	while (m_current_token->type == TokenType::OPERATOR && std::find(operators.begin(), operators.end(), m_current_token->get_string("value")) != operators.end())
+	//x operator y
+	std::unique_ptr<ASTNode> x_expr;
+	std::unique_ptr<ASTNode> y_expr;
+	const Token* op = nullptr;
+	if (test({
+		[&]() { return test_parse(parse_x, x_expr); },
+		[&]() { return consume(TokenType::OPERATOR, operators, op); },
+		[&]() { return test_parse(parse_y, y_expr); }
+		}))
 	{
-		const std::string& op = m_current_token->get_string("value");
-		advance();
-		ParseRes rhs_res = operand_parse_fn();
-		if (rhs_res.is_error())
-			return rhs_res;
-
-		lhs = std::unique_ptr<ASTNode>(new ASTBinaryNode(op, lhs.release(), *rhs_res));
+		return new ASTBinaryNode(op->get_string("value"), x_expr.release(), y_expr.release());
 	}
 
-	return lhs.release();
+	//x
+	return parse_x();
 }
 
 ParseRes Parser::parse_unary()
@@ -251,7 +264,7 @@ ParseRes Parser::parse_unary()
 	// "-" unary
 	std::unique_ptr<ASTNode> unary;
 	if (test({
-		[this]() { return consume(TokenType::OPERATOR, "-"); },
+		[this]() { return consume(TokenType::OPERATOR, {"-"}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), unary); },
 	}))
 	{
@@ -287,9 +300,9 @@ ParseRes Parser::parse_primary()
 	// "(" expr ")"
 	std::unique_ptr<ASTNode> expr;
 	if(test({
-		[this]() { return consume(TokenType::SPECIAL_CHAR, "("); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), expr); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, ")"); }
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
 	})) 
 	{
 		return expr.release();

@@ -18,9 +18,9 @@ private:
 
 	bool test(const std::initializer_list<std::function<bool()>>& test_functions);
 
-	bool consume(TokenType type, const std::string& v);
+	bool consume(TokenType type, const std::initializer_list<std::string>& values);
 	bool consume(TokenType type);
-	bool consume(TokenType type, const std::string& v, const Token*& tok);
+	bool consume(TokenType type, const std::initializer_list<std::string>& values, const Token*& tok);
 	bool consume(TokenType type, const Token*& tok);
 	bool test_parse(const std::function<ParseRes()>& parse_fn, std::unique_ptr<ASTNode>& result);
 	bool test_parse(const std::function<ParseRes()>& parse_fn);
@@ -32,7 +32,7 @@ private:
 	ParseRes parse_comparison();
 	ParseRes parse_sum();
 	ParseRes parse_product();
-	ParseRes parse_binary_expr(const std::function<ParseRes()>& operand_parse_fn, const std::vector<std::string>& operators);
+	ParseRes parse_binary_expr(const std::function<ParseRes()>& parse_x, const std::function<ParseRes()>& parse_y, const std::initializer_list<std::string>& operators);
 
 	ParseRes parse_unary();
 	ParseRes parse_primary();
