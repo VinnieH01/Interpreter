@@ -18,6 +18,7 @@ void Parser::advance()
 	}
 }
 
+//Get the previous token
 const Token& Parser::prev(size_t n)
 {
 	if (m_index - n >= 0)
@@ -27,6 +28,12 @@ const Token& Parser::prev(size_t n)
 	return Token{ TokenType::EOF_TOKEN, {} };
 }
 
+/*
+* Function used to test grammar patterns. Calls a series of functions in order and if they all
+* return true then the output is true.
+* If one of the functions return false then the parser goes back to the index it was before
+* calling test().
+*/
 bool Parser::test(const std::initializer_list<std::function<bool()>>& test_functions)
 {
 	int saved_idx = m_index;
@@ -47,6 +54,7 @@ bool Parser::test(const std::initializer_list<std::function<bool()>>& test_funct
 	return true;
 }
 
+// Advance if the current token has TokenType type and is one of the listed values.
 bool Parser::consume(TokenType type, const std::initializer_list<std::string>& values)
 {
 	for (const auto& v : values)
@@ -61,6 +69,7 @@ bool Parser::consume(TokenType type, const std::initializer_list<std::string>& v
 	return false;
 }
 
+//If the token was consumed then it will be pointed to by tok.
 bool Parser::consume(TokenType type, const std::initializer_list<std::string>& values, const Token*& tok)
 {
 	bool result = consume(type, values);
@@ -82,6 +91,11 @@ bool Parser::consume(TokenType type, const Token*& tok)
 	return result;
 }
 
+/*
+* Function used together with test() used to try to parse statements and expressions.
+* Calls parse_fn and if it succeeds "result" gains ownership of a pointer to the resulting ASTNode.
+* As with all parsing functions parse_fn should heap allocate its resulting ASTNode
+*/
 bool Parser::test_parse(const std::function<ParseRes()>& parse_fn, std::unique_ptr<ASTNode>& result)
 {
 	ParseRes res = parse_fn();
@@ -222,6 +236,11 @@ ParseRes Parser::parse_product()
 	return parse_binary_expr(std::bind(&Parser::parse_unary, this), std::bind(&Parser::parse_product, this), { "*", "/" });
 }
 
+/*
+* Checks for any binary expression pattern where x is the operand and y is the adjacent 
+* lower-precedence expression (this should be the calling function).
+* Effectively looking for grammar rule y -> x (operator x)*
+*/
 ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& parse_x, const std::function<ParseRes()>& parse_y, const std::initializer_list<std::string>& operators)
 {
 	//x operator y
