@@ -13,7 +13,6 @@ public:
 	Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> parse(const std::vector<Token>& tokens);
 private:
 	void advance();
-	const Token& peek(size_t n = 1);
 	const Token& prev(size_t n = 1);
 
 	bool test(const std::initializer_list<std::function<bool()>>& test_functions);
@@ -23,7 +22,6 @@ private:
 	bool consume(TokenType type, const std::initializer_list<std::string>& values, const Token*& tok);
 	bool consume(TokenType type, const Token*& tok);
 	bool test_parse(const std::function<ParseRes()>& parse_fn, std::unique_ptr<ASTNode>& result);
-	bool test_parse(const std::function<ParseRes()>& parse_fn);
 
 	ParseRes parse_stmt();
 	ParseRes parse_expr();

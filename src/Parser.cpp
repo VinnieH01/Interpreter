@@ -18,15 +18,6 @@ void Parser::advance()
 	}
 }
 
-const Token& Parser::peek(size_t n)
-{
-	if (m_index + n < m_tokens->size())
-	{
-		return (*m_tokens)[m_index + n];
-	}
-	return Token{ TokenType::EOF_TOKEN, {} };
-}
-
 const Token& Parser::prev(size_t n)
 {
 	if (m_index - n >= 0)
@@ -100,15 +91,6 @@ bool Parser::test_parse(const std::function<ParseRes()>& parse_fn, std::unique_p
 	return true;
 }
 
-bool Parser::test_parse(const std::function<ParseRes()>& parse_fn)
-{
-	ParseRes res = parse_fn();
-	if (res.is_error())
-		return false;
-	delete *res; //Parse function creates ptr using new so we have to delete in order to avoid memory leak
-	return true;
-}
-
 Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::parse(const std::vector<Token>& tokens)
 {
 	m_tokens = &tokens;
@@ -134,7 +116,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 		else
 			stmts.push_back(std::unique_ptr<ASTNode>(*res));
 
-		if (!consume(TokenType::SPECIAL_CHAR, { ";" } ))
+		if (!consume(TokenType::SPECIAL_CHAR, {";"} ))
 			errors.push_back("Expected ';' after statement");
 	}
 
@@ -148,7 +130,7 @@ using ParseRes = Result<ASTNode*, const char*>;
 ParseRes Parser::parse_stmt()
 {
 	//"{" program "}"
-	if (consume(TokenType::SPECIAL_CHAR, { "{" }))
+	if (consume(TokenType::SPECIAL_CHAR, {"{"}))
 	{
 		std::vector<std::unique_ptr<ASTNode>> stmts;
 		while (!consume(TokenType::SPECIAL_CHAR, { "}" }))
