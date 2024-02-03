@@ -108,14 +108,14 @@ bool Parser::test_parse(const std::function<ParseRes()>& parse_fn, std::unique_p
 Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::parse(const std::vector<Token>& tokens)
 {
 	m_tokens = &tokens;
-	m_current_token = &(*m_tokens)[0];
 
 	m_index = 0;
+	m_current_token = &m_tokens->at(m_index);
 
 	std::vector<const char*> errors;
 	std::vector<std::unique_ptr<ASTNode>> stmts;
 
-	while (m_current_token->type != TokenType::EOF_TOKEN)
+	while (!consume(TokenType::EOF_TOKEN))
 	{
 		ParseRes res = parse_stmt();
 		if (res.is_error())
@@ -143,7 +143,7 @@ using ParseRes = Result<ASTNode*, const char*>;
 
 ParseRes Parser::parse_stmt()
 {
-	//"{" program "}"
+	//"{" <program> "}"
 	if (consume(TokenType::SPECIAL_CHAR, {"{"}))
 	{
 		std::vector<std::unique_ptr<ASTNode>> stmts;
@@ -151,7 +151,7 @@ ParseRes Parser::parse_stmt()
 		{
 			ParseRes res = parse_stmt();
 			if (res.is_error())
-				return "error in block";
+				return res;
 			else
 				stmts.push_back(std::unique_ptr<ASTNode>(*res));
 
@@ -161,7 +161,7 @@ ParseRes Parser::parse_stmt()
 		return new ASTBlockNode(std::move(stmts));
 	}
 
-	//"print" expr
+	//"print" <expr>
 	std::unique_ptr<ASTNode> print_expr;
 	if (test({
 		[this]() { return consume(TokenType::KEYWORD, {"print"}); },
@@ -171,7 +171,7 @@ ParseRes Parser::parse_stmt()
 		return new ASTPrintNode(print_expr.release());
 	}
 
-	//"let" IDENTIFIER ":=" expr
+	//"let" IDENTIFIER ":=" <expr>
 	std::unique_ptr<ASTNode> let_expr;
 	const Token* identifier = nullptr;
 	if (test({
@@ -184,7 +184,7 @@ ParseRes Parser::parse_stmt()
 		return new ASTLetNode(identifier->get_string("name"), let_expr.release());
 	}
 
-	//"if" "(" expr ")" stmt
+	//"if" "(" <expr> ")" <stmt>
 	std::unique_ptr<ASTNode> conditional_expr;
 	std::unique_ptr<ASTNode> body_stmt;
 	if (test({
@@ -198,41 +198,41 @@ ParseRes Parser::parse_stmt()
 		return new ASTIfNode(conditional_expr.release(), body_stmt.release());
 	}
 
-	//expr
+	//<expr>
 	return parse_expr();
 }
 
 ParseRes Parser::parse_expr()
 {
-	//logic
+	//<logic>
 	return parse_logic();
 }
 
 ParseRes Parser::parse_logic()
 {
-	//comparison ("&&"|"||") logic
-	//comparison
+	//<comparison> ("&&"|"||") <logic>
+	//<comparison>
 	return parse_binary_expr(std::bind(&Parser::parse_comparison, this), std::bind(&Parser::parse_logic, this), { "&&", "||" });
 }
 
 ParseRes Parser::parse_comparison()
 {
-	//sum (">"|"<"|"=="|">="|"<=") comparison
-	//sum
+	//<sum> (">"|"<"|"=="|">="|"<=") <comparison>
+	//<sum>
 	return parse_binary_expr(std::bind(&Parser::parse_sum, this), std::bind(&Parser::parse_comparison, this), { ">", "<", "==", ">=", "<=" });
 }
 
 ParseRes Parser::parse_sum()
 {
-	//product ("+"|"-") sum
-	//product
+	//<product> ("+"|"-") <sum>
+	//<product>
 	return parse_binary_expr(std::bind(&Parser::parse_product, this), std::bind(&Parser::parse_sum, this), {"+", "-"});
 }
 
 ParseRes Parser::parse_product()
 {
-	//unary ("*"|"/") product
-	//unary
+	//<unary> ("*"|"/") <product>
+	//<unary>
 	return parse_binary_expr(std::bind(&Parser::parse_unary, this), std::bind(&Parser::parse_product, this), { "*", "/" });
 }
 
@@ -243,7 +243,7 @@ ParseRes Parser::parse_product()
 */
 ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& parse_x, const std::function<ParseRes()>& parse_y, const std::initializer_list<std::string>& operators)
 {
-	//x operator y
+	//<x> "operator" <y>
 	std::unique_ptr<ASTNode> x_expr;
 	std::unique_ptr<ASTNode> y_expr;
 	const Token* op = nullptr;
@@ -256,13 +256,13 @@ ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& parse_x, con
 		return new ASTBinaryNode(op->get_string("value"), x_expr.release(), y_expr.release());
 	}
 
-	//x
+	//<x>
 	return parse_x();
 }
 
 ParseRes Parser::parse_unary()
 {
-	// "-" unary
+	// "-" <unary>
 	std::unique_ptr<ASTNode> unary;
 	if (test({
 		[this]() { return consume(TokenType::OPERATOR, {"-"}); },
@@ -272,7 +272,7 @@ ParseRes Parser::parse_unary()
 		return new ASTUnaryNode("-", unary.release());
 	}
 
-	//primary
+	//<primary>
 	return parse_primary();
 }
 
@@ -298,7 +298,7 @@ ParseRes Parser::parse_primary()
 	if (consume(TokenType::IDENTIFIER))
 		return new ASTIdentifierNode(prev().get_string("name"));
 	
-	// "(" expr ")"
+	// "(" <expr> ")"
 	std::unique_ptr<ASTNode> expr;
 	if(test({
 		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },

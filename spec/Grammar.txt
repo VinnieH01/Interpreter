@@ -1,28 +1,28 @@
-program         -> (stmt ";")*
+<program>         ::= (<stmt> ";")*
 
-stmt            -> "{" program "}"
-                -> "print" expr
-                -> "let" IDENTIFIER ":=" expr
-                -> "if" "(" expr ")" stmt
-                -> expr
+<stmt>            ::= "{" <program> "}"
+                    | "print" <expr>
+                    | "let" IDENTIFIER ":=" <expr>
+                    | "if" "(" <expr> ")" <stmt>
+                    | <expr>
 
-expr            -> logic
+<expr>            ::= <logic>
 
-logic           -> comparison ("&&"|"||") logic				
-                -> comparison
+<logic>           ::= <comparison> ("&&" | "||") <logic>
+                    | <comparison>
 
-comparison      -> product (">"|"<"|"=="|">="|"<=") sum
-                -> sum
-
-sum             -> product ("+"|"-") sum
-                -> product
-
-product         -> unary ("*"|"/") product
-                -> unary
-
-unary           -> "-" unary 
-                -> primary
-
-primary         -> LITERAL
-                -> IDENTIFIER
-                -> "( expr ")"
+<comparison>      ::= <product> (">" | "<" | "==" | ">=" | "<=") <sum>
+                    | <sum>
+					
+<sum>             ::= <product> ("+" | "-") <sum>
+                    | <product>
+					
+<product>         ::= <unary> ("*" | "/") <product>
+                    | <unary>
+					
+<unary>           ::= "-" <unary>
+                    | <primary>
+					
+<primary>         ::= LITERAL
+                    | IDENTIFIER
+                    | "(" <expr> ")"
