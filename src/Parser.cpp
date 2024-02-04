@@ -183,17 +183,28 @@ Result<ASTNode*> Parser::parse_stmt()
 	}
 
 	//"if" "(" <expr> ")" <stmt>
+	//"if" "(" <expr> ")" <stmt> "else" <stmt>
 	std::unique_ptr<ASTNode> conditional_expr;
-	std::unique_ptr<ASTNode> body_stmt;
+	std::unique_ptr<ASTNode> then_stmt;
+	std::unique_ptr<ASTNode> else_stmt;
 	if (test({
 		[this]() { return consume(TokenType::KEYWORD, {"if"}); },
 		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), conditional_expr); },
 		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); },
-		[&]() { return test_parse(std::bind(&Parser::parse_stmt, this), body_stmt); }
+		[&]() 
+		{ 
+			bool b_then = test_parse(std::bind(&Parser::parse_stmt, this), then_stmt);
+			bool b_else_key = consume(TokenType::KEYWORD, { "else" });
+			bool b_else_stmt = test_parse(std::bind(&Parser::parse_stmt, this), else_stmt);
+
+			//If both b_else_key and b_else_stmt are false we have a valid if statement
+			//If all three bools are true we have a valid if-else statement
+			return b_then && (b_else_key == b_else_stmt);
+		}
 		}))
 	{
-		return new ASTIfNode(conditional_expr.release(), body_stmt.release());
+		return new ASTIfNode(conditional_expr.release(), then_stmt.release(), else_stmt.release());
 	}
 
 	//<expr>

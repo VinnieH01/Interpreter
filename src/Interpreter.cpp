@@ -51,7 +51,13 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 
 	if (isTruthy((*condition_res).get()))
 	{
-		return node.get_stmt()->accept(*this);
+		return node.get_then_stmt()->accept(*this);
+	}
+	else
+	{
+		ASTNode* else_stmt = node.get_else_stmt().get();
+		if(else_stmt)
+			return else_stmt->accept(*this);
 	}
 
 	return {};
@@ -87,49 +93,27 @@ bool Interpreter::number_op(Value* lhs, Value* rhs, const std::string& op, std::
 		if (auto* val2 = dynamic_cast<NumberValue<T2>*>(rhs))
 		{
 			if (op == "+")
-			{
 				out = std::make_shared<NumberValue<T>>(val->value + val2->value);
-			}
 			else if (op == "-")
-			{
 				out = std::make_shared<NumberValue<T>>(val->value - val2->value);
-			}
 			else if (op == "*")
-			{
 				out = std::make_shared<NumberValue<T>>(val->value * val2->value);
-			}
 			else if (op == "/")
-			{
 				out = std::make_shared<NumberValue<T>>(val->value / val2->value);
-			}
 			else if (op == "==")
-			{
 				out = std::make_shared<NumberValue<int>>(val->value == val2->value);
-			}
 			else if (op == "<=")
-			{
 				out = std::make_shared<NumberValue<int>>(val->value <= val2->value);
-			}
 			else if (op == ">=")
-			{
 				out = std::make_shared<NumberValue<int>>(val->value >= val2->value);
-			}
 			else if (op == "<")
-			{
 				out = std::make_shared<NumberValue<int>>(val->value < val2->value);
-			}
 			else if (op == ">")
-			{
 				out = std::make_shared<NumberValue<int>>(val->value > val2->value);
-			}
 			else if (op == "&&")
-			{
 				out = std::make_shared<NumberValue<int>>(isTruthy(val) && isTruthy(val2));
-			}
 			else if (op == "||")
-			{
 				out = std::make_shared<NumberValue<int>>(isTruthy(val) || isTruthy(val2));
-			}
 		}
 	}
 

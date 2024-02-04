@@ -3,8 +3,11 @@
 <stmt>            ::= "{" <program> "}"
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
-                    | "if" "(" <expr> ")" <stmt>
+                    | <if>
                     | <expr>
+
+<if>              ::= "if" "(" <expr> ")" <stmt>
+                    | "if" "(" <expr> ")" <stmt> "else" <stmt>
 
 <expr>            ::= <logic>
 
