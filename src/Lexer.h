@@ -7,6 +7,7 @@
 #include <array>
 #include "Result.h"
 #include <regex>
+#include "Error.h"
 
 enum class TokenType
 {
@@ -23,9 +24,10 @@ struct Token
 {
 	const TokenType type;
 
-	inline Token(TokenType t, std::unordered_map<std::string, std::string> m)
+	inline Token(TokenType t, std::unordered_map<std::string, std::string> m, size_t position)
 		: type(t)
 		, m_meta(m)
+		, m_position(position)
 	{}
 
 	inline void print() const
@@ -44,6 +46,8 @@ struct Token
 			std::cout << "]";
 		}
 	}
+
+	inline size_t get_position() const { return m_position; }
 
 	inline const std::string& get_string(const std::string& key) const 
 	{
@@ -78,12 +82,13 @@ struct Token
 
 private:
 	const std::unordered_map<std::string, std::string> m_meta;
+	const size_t m_position;
 };
 
 class Lexer
 {
 public:
-	Result<std::vector<Token>, size_t> tokenize(std::string text);
+	Result<std::vector<Token>> tokenize(std::string text);
 
 private:
 	Token tokenize_text(const std::string& value);
@@ -122,4 +127,6 @@ private:
 	{
 		"int", "float", "char"
 	};
+
+	size_t m_position = 0;
 };

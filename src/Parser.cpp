@@ -25,7 +25,7 @@ const Token& Parser::prev(size_t n)
 	{
 		return (*m_tokens)[m_index - n];
 	}
-	return Token{ TokenType::EOF_TOKEN, {} };
+	return Token{ TokenType::EOF_TOKEN, {}, 0 };
 }
 
 /*
@@ -96,28 +96,28 @@ bool Parser::consume(TokenType type, const Token*& tok)
 * Calls parse_fn and if it succeeds "result" gains ownership of a pointer to the resulting ASTNode.
 * As with all parsing functions parse_fn should heap allocate its resulting ASTNode
 */
-bool Parser::test_parse(const std::function<ParseRes()>& parse_fn, std::unique_ptr<ASTNode>& result)
+bool Parser::test_parse(const std::function<Result<ASTNode*>()>& parse_fn, std::unique_ptr<ASTNode>& result)
 {
-	ParseRes res = parse_fn();
+	Result<ASTNode*> res = parse_fn();
 	if (res.is_error())
 		return false;
 	result.reset(*res);
 	return true;
 }
 
-Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::parse(const std::vector<Token>& tokens)
+Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<Error>> Parser::parse(const std::vector<Token>& tokens)
 {
 	m_tokens = &tokens;
 
 	m_index = 0;
 	m_current_token = &m_tokens->at(m_index);
 
-	std::vector<const char*> errors;
+	std::vector<Error> errors;
 	std::vector<std::unique_ptr<ASTNode>> stmts;
 
 	while (!consume(TokenType::EOF_TOKEN))
 	{
-		ParseRes res = parse_stmt();
+		Result<ASTNode*> res = parse_stmt();
 		if (res.is_error())
 		{
 			errors.push_back(res.get_error());
@@ -131,7 +131,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 			stmts.emplace_back(*res);
 
 		if (!consume(TokenType::SPECIAL_CHAR, {";"} ))
-			errors.push_back("Expected ';' after statement");
+			errors.emplace_back("Expected ';' after statement", m_current_token->get_position());
 	}
 
 	if (!errors.empty()) 
@@ -139,9 +139,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 	return stmts;
 }
 
-using ParseRes = Result<ASTNode*, const char*>;
-
-ParseRes Parser::parse_stmt()
+Result<ASTNode*> Parser::parse_stmt()
 {
 	//"{" <program> "}"
 	if (consume(TokenType::SPECIAL_CHAR, {"{"}))
@@ -149,14 +147,14 @@ ParseRes Parser::parse_stmt()
 		std::vector<std::unique_ptr<ASTNode>> stmts;
 		while (!consume(TokenType::SPECIAL_CHAR, { "}" }))
 		{
-			ParseRes res = parse_stmt();
+			Result<ASTNode*> res = parse_stmt();
 			if (res.is_error())
 				return res;
 			else
 				stmts.emplace_back(*res);
 
 			if (!consume(TokenType::SPECIAL_CHAR, { ";" }))
-				return "Expected ';' after statement";
+				return Error("Expected ';' after statement", m_current_token->get_position());
 		}
 		return new ASTBlockNode(std::move(stmts));
 	}
@@ -202,34 +200,34 @@ ParseRes Parser::parse_stmt()
 	return parse_expr();
 }
 
-ParseRes Parser::parse_expr()
+Result<ASTNode*> Parser::parse_expr()
 {
 	//<logic>
 	return parse_logic();
 }
 
-ParseRes Parser::parse_logic()
+Result<ASTNode*> Parser::parse_logic()
 {
 	//<comparison> ("&&"|"||") <logic>
 	//<comparison>
 	return parse_binary_expr(std::bind(&Parser::parse_comparison, this), std::bind(&Parser::parse_logic, this), { "&&", "||" });
 }
 
-ParseRes Parser::parse_comparison()
+Result<ASTNode*> Parser::parse_comparison()
 {
 	//<sum> (">"|"<"|"=="|">="|"<=") <comparison>
 	//<sum>
 	return parse_binary_expr(std::bind(&Parser::parse_sum, this), std::bind(&Parser::parse_comparison, this), { ">", "<", "==", ">=", "<=" });
 }
 
-ParseRes Parser::parse_sum()
+Result<ASTNode*> Parser::parse_sum()
 {
 	//<product> ("+"|"-") <sum>
 	//<product>
 	return parse_binary_expr(std::bind(&Parser::parse_product, this), std::bind(&Parser::parse_sum, this), {"+", "-"});
 }
 
-ParseRes Parser::parse_product()
+Result<ASTNode*> Parser::parse_product()
 {
 	//<unary> ("*"|"/") <product>
 	//<unary>
@@ -241,7 +239,9 @@ ParseRes Parser::parse_product()
 * lower-precedence expression (this should be the calling function).
 * Effectively looking for grammar rule y -> x (operator x)*
 */
-ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& parse_x, const std::function<ParseRes()>& parse_y, const std::initializer_list<std::string>& operators)
+Result<ASTNode*> Parser::parse_binary_expr(const std::function<Result<ASTNode*>()>& parse_x,
+										   const std::function<Result<ASTNode*>()>& parse_y,
+										   const std::initializer_list<std::string>& operators)
 {
 	//<x> "operator" <y>
 	std::unique_ptr<ASTNode> x_expr;
@@ -260,7 +260,7 @@ ParseRes Parser::parse_binary_expr(const std::function<ParseRes()>& parse_x, con
 	return parse_x();
 }
 
-ParseRes Parser::parse_unary()
+Result<ASTNode*> Parser::parse_unary()
 {
 	// "-" <unary>
 	std::unique_ptr<ASTNode> unary;
@@ -276,7 +276,7 @@ ParseRes Parser::parse_unary()
 	return parse_primary();
 }
 
-ParseRes Parser::parse_primary()
+Result<ASTNode*> Parser::parse_primary()
 {
 	// LITERAL
 	if (consume(TokenType::LITERAL))
@@ -309,5 +309,5 @@ ParseRes Parser::parse_primary()
 		return expr.release();
 	}
 
-	return "Invalid Expression";
+	return Error("Invalid statement", m_current_token->get_position());
 }

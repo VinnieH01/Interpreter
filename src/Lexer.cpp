@@ -5,11 +5,12 @@
 #include <array>
 
 #include "Lexer.h"
+#include "Error.h"
 
-Result<std::vector<Token>, size_t> Lexer::tokenize(std::string text) 
+Result<std::vector<Token>> Lexer::tokenize(std::string text) 
 {
 	std::vector<Token> tokens;
-	size_t cntr = 0;
+	m_position = 0;
 	while (text.size() > 0)
 	{
 		std::smatch match;
@@ -26,26 +27,26 @@ Result<std::vector<Token>, size_t> Lexer::tokenize(std::string text)
 						break;
 					case TEXT: tokens.push_back(tokenize_text(value));
 						break;
-					case CHAR_LITERAL: tokens.push_back(Token(TokenType::LITERAL, { { "data_type", "char" }, { "value", match[1]} }));
+					case CHAR_LITERAL: tokens.push_back(Token(TokenType::LITERAL, { { "data_type", "char" }, { "value", match[1]} }, m_position));
 						break;
-					case STRING_LITERAL: tokens.push_back(Token(TokenType::LITERAL, { { "data_type", "string" }, { "value", match[1]} }));
+					case STRING_LITERAL: tokens.push_back(Token(TokenType::LITERAL, { { "data_type", "string" }, { "value", match[1]}}, m_position));
 						break;
-					case OPERATOR: tokens.push_back(Token(TokenType::OPERATOR, { { "value", value } }));
+					case OPERATOR: tokens.push_back(Token(TokenType::OPERATOR, { { "value", value } }, m_position));
 						break;
-					case SPECIAL: tokens.push_back(Token(TokenType::SPECIAL_CHAR, { { "value", value } }));
+					case SPECIAL: tokens.push_back(Token(TokenType::SPECIAL_CHAR, { { "value", value } }, m_position));
 						break;
 					}
 				}
 				text = text.substr(value.size());
-				cntr += value.size();
+				m_position += value.size();
 				break;
 			}
 		}
 		if (match.empty())
-			return cntr;
+			return Error("Lexer error", m_position);
 	}
 
-	tokens.push_back(Token(TokenType::EOF_TOKEN, {}));
+	tokens.push_back(Token(TokenType::EOF_TOKEN, {}, m_position));
 	return tokens;
 }
 
@@ -53,20 +54,20 @@ Token Lexer::tokenize_text(const std::string& value)
 {
 	if (std::find(m_keywords.begin(), m_keywords.end(), value) != m_keywords.end())
 	{
-		return Token(TokenType::KEYWORD, { { "value", value } });
+		return Token(TokenType::KEYWORD, { { "value", value } }, m_position);
 	}
 	if (std::find(m_types.begin(), m_types.end(), value) != m_types.end())
 	{
-		return Token(TokenType::TYPE, { { "value", value } });
+		return Token(TokenType::TYPE, { { "value", value } }, m_position);
 	}
-	return Token(TokenType::IDENTIFIER, { { "name", value } });
+	return Token(TokenType::IDENTIFIER, { { "name", value } }, m_position);
 }
 
 Token Lexer::tokenize_number(const std::string& value)
 {
 	if (value.find('.') != std::string::npos)
 	{
-		return Token(TokenType::LITERAL, { { "data_type", "float" }, { "value", value } });
+		return Token(TokenType::LITERAL, { { "data_type", "float" }, { "value", value } }, m_position);
 	}
-	return Token(TokenType::LITERAL, { { "data_type", "integer" }, { "value", value } });
+	return Token(TokenType::LITERAL, { { "data_type", "integer" }, { "value", value } }, m_position);
 }

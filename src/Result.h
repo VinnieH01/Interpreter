@@ -1,6 +1,8 @@
 #pragma once
 
-template <typename T, typename E>
+#include "Error.h"
+
+template <typename T, typename E = Error>
 class Result
 {
 public:
