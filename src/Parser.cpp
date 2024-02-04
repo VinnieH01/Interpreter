@@ -194,16 +194,17 @@ Result<ASTNode*> Parser::parse_stmt()
 		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); },
 		[&]() 
 		{ 
-			bool b_then = test_parse(std::bind(&Parser::parse_stmt, this), then_stmt);
-			bool b_else_key = consume(TokenType::KEYWORD, { "else" });
-			bool b_else_stmt = test_parse(std::bind(&Parser::parse_stmt, this), else_stmt);
-
-			//If both b_else_key and b_else_stmt are false we have a valid if statement
-			//If all three bools are true we have a valid if-else statement
-			return b_then && (b_else_key == b_else_stmt);
+			if (test_parse(std::bind(&Parser::parse_stmt, this), then_stmt)) 
+			{
+				if(consume(TokenType::KEYWORD, { "else" }))
+					return test_parse(std::bind(&Parser::parse_stmt, this), else_stmt); //"if" "(" <expr> ")" <stmt> "else" <stmt>
+				return true; //"if" "(" <expr> ")" <stmt>
+			}
+			return false; //"if" "(" <expr> ")" - FAIL
 		}
 		}))
 	{
+		//If there was no else statement else_stmt.release() will return nullptr
 		return new ASTIfNode(conditional_expr.release(), then_stmt.release(), else_stmt.release());
 	}
 
