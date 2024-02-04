@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <fstream>
+#include <sstream>
 
 #include "lexer.h"
 #include "AST.h"
@@ -20,6 +22,23 @@ int main()
 	{
 		std::string input_code;
 		std::getline(std::cin, input_code);
+
+		if (input_code.starts_with("file:")) 
+		{
+			input_code.erase(std::remove(input_code.begin(), input_code.end(), ' '), input_code.end());
+
+			std::ifstream input_file(input_code.substr(5));
+			
+			if (!input_file.is_open()) 
+			{
+				std::cerr << "Error opening file!" << std::endl;
+				continue;
+			}
+
+			std::ostringstream code_stream;
+			code_stream << input_file.rdbuf();
+			input_code = code_stream.str();
+		}
 
 		auto lexer_res = lexer.tokenize(input_code);
 		if (lexer_res.is_error())

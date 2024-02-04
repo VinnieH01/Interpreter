@@ -19,7 +19,6 @@ Result<std::vector<Token>> Lexer::tokenize(std::string text)
 			if (std::regex_search(text, match, pattern.second, std::regex_constants::match_continuous)) //Only match at start of string
 			{
 				const std::string& value = match[0];
-				std::cout << match.position();
 				if (pattern.first != WHITESPACE && pattern.first != COMMENT)
 				{
 					switch (pattern.first)
