@@ -128,7 +128,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<const char*>> Parser::
 				advance();
 		}
 		else
-			stmts.push_back(std::unique_ptr<ASTNode>(*res));
+			stmts.emplace_back(*res);
 
 		if (!consume(TokenType::SPECIAL_CHAR, {";"} ))
 			errors.push_back("Expected ';' after statement");
@@ -153,7 +153,7 @@ ParseRes Parser::parse_stmt()
 			if (res.is_error())
 				return res;
 			else
-				stmts.push_back(std::unique_ptr<ASTNode>(*res));
+				stmts.emplace_back(*res);
 
 			if (!consume(TokenType::SPECIAL_CHAR, { ";" }))
 				return "Expected ';' after statement";
