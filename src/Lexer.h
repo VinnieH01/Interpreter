@@ -97,6 +97,7 @@ private:
 	enum 
 	{
 		WHITESPACE,
+		COMMENT,
 		NUMBER,
 		TEXT,
 		CHAR_LITERAL,
@@ -107,15 +108,14 @@ private:
 
 	const std::vector<std::pair<int, std::regex>> m_token_patterns
 	{
-		//Important that these start with ^
-
-		{ WHITESPACE, std::regex("^\\s+")},
-		{ NUMBER, std::regex("^[0-9]*\\.?[0-9]+")},
-		{ TEXT, std::regex("^[a-zA-Z_]\\w*")},
-		{ CHAR_LITERAL, std::regex("^'(.)'")},
-		{ STRING_LITERAL, std::regex("^\"([^\"]+)\"")},
-		{ OPERATOR, std::regex("^(?::=|&&|\\|\\||>=|<=|==|[+\\-*\\/<>])")},
-		{ SPECIAL, std::regex("^[;()\\[\\]{}]")},
+		{ WHITESPACE, std::regex("\\s+")},
+		{ COMMENT, std::regex("(?:\\/\\/.*\\n?|\\/\\*(?:.|\\n)*?\\*\\/)")},
+		{ NUMBER, std::regex("[0-9]*\\.?[0-9]+")},
+		{ TEXT, std::regex("[a-zA-Z_]\\w*")},
+		{ CHAR_LITERAL, std::regex("'(.)'")},
+		{ STRING_LITERAL, std::regex("\"(.+?)\"")},
+		{ OPERATOR, std::regex("(?::=|&&|\\|\\||>=|<=|==|[+\\-*\\/<>])")},
+		{ SPECIAL, std::regex("[;()\\[\\]{}]")},
 	};
 
 	const std::vector<std::string> m_keywords

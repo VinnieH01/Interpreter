@@ -16,10 +16,11 @@ Result<std::vector<Token>> Lexer::tokenize(std::string text)
 		std::smatch match;
 		for (const auto& pattern : m_token_patterns)
 		{
-			if (std::regex_search(text, match, pattern.second))
+			if (std::regex_search(text, match, pattern.second, std::regex_constants::match_continuous)) //Only match at start of string
 			{
 				const std::string& value = match[0];
-				if (pattern.first != WHITESPACE)
+				std::cout << match.position();
+				if (pattern.first != WHITESPACE && pattern.first != COMMENT)
 				{
 					switch (pattern.first)
 					{

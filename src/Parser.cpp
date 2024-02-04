@@ -182,8 +182,7 @@ Result<ASTNode*> Parser::parse_stmt()
 		return new ASTLetNode(identifier->get_string("name"), let_expr.release());
 	}
 
-	//"if" "(" <expr> ")" <stmt>
-	//"if" "(" <expr> ")" <stmt> "else" <stmt>
+	//<if>
 	std::unique_ptr<ASTNode> conditional_expr;
 	std::unique_ptr<ASTNode> then_stmt;
 	std::unique_ptr<ASTNode> else_stmt;
@@ -202,7 +201,7 @@ Result<ASTNode*> Parser::parse_stmt()
 			}
 			return false; //"if" "(" <expr> ")" - FAIL
 		}
-		}))
+	}))
 	{
 		//If there was no else statement else_stmt.release() will return nullptr
 		return new ASTIfNode(conditional_expr.release(), then_stmt.release(), else_stmt.release());
