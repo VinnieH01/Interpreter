@@ -28,7 +28,8 @@
 					
 <primary>         ::= LITERAL
                     | IDENTIFIER
-					| "input"
+                    | "input"
+                    | "(" TYPE ")" <primary>
                     | "(" <expr> ")"
 
 <comment>         ::= // ...

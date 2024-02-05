@@ -85,6 +85,88 @@ InterpreterResult Interpreter::visit(const ASTPrintNode& node)
 	return {};
 }
 
+InterpreterResult Interpreter::visit(const ASTCastNode& node)
+{
+	//TODO: Refactor this thing and remove duplication (will rework the entire interpreter code soon anyway)
+
+	InterpreterResult expr_res = node.get_expr()->accept(*this);
+	if (expr_res.is_error())
+		return expr_res;
+	
+	Value* expr_value = (*expr_res).get();
+
+	if (node.get_type() == "int") 
+	{
+		if (dynamic_cast<NumberValue<int>*>(expr_value))
+			return expr_res;
+		if (auto* val = dynamic_cast<NumberValue<float>*>(expr_value))
+			return { std::make_shared<NumberValue<int>>(val->value) };
+		if (auto* val = dynamic_cast<NumberValue<char>*>(expr_value))
+			return { std::make_shared<NumberValue<int>>(val->value) };
+
+		if (auto* val = dynamic_cast<StringValue*>(expr_value))
+		{
+			int casted = 0;
+			try
+			{
+				casted = std::stoi(val->text);
+			}
+			catch (const std::exception&) 
+			{
+				return "String is not a valid integer";
+			}
+
+			return { std::make_shared<NumberValue<int>>(casted) };
+		}
+	}
+
+	if (node.get_type() == "float")
+	{
+		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
+			return { std::make_shared<NumberValue<float>>(val->value) };
+		if (dynamic_cast<NumberValue<float>*>(expr_value))
+			return expr_res;
+		if (auto* val = dynamic_cast<NumberValue<char>*>(expr_value))
+			return { std::make_shared<NumberValue<float>>(val->value) };
+
+		if (auto* val = dynamic_cast<StringValue*>(expr_value))
+		{
+			float casted = 0;
+			try
+			{
+				casted = std::stof(val->text);
+			}
+			catch (const std::exception&)
+			{
+				return "String is not a valid float";
+			}
+
+			return { std::make_shared<NumberValue<float>>(casted) };
+		}
+	}
+
+	if (node.get_type() == "char")
+	{
+		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
+			return { std::make_shared<NumberValue<char>>(val->value) };
+		if (dynamic_cast<NumberValue<char>*>(expr_value))
+			return expr_res;
+	}
+
+	if (node.get_type() == "string")
+	{
+		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
+			return { std::make_shared<StringValue>(std::to_string(val->value)) };
+		if (auto* val = dynamic_cast<NumberValue<float>*>(expr_value))
+			return { std::make_shared<StringValue>(std::to_string(val->value)) };
+		if (auto* val = dynamic_cast<NumberValue<char>*>(expr_value))
+			return { std::make_shared<StringValue>(std::string(1, *val)) };
+
+		if (dynamic_cast<StringValue*>(expr_value))
+			return expr_res;
+	}
+}
+
 InterpreterResult Interpreter::visit(const ASTInputNode&)
 {
 	std::string input;

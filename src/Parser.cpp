@@ -315,6 +315,19 @@ Result<ASTNode*> Parser::parse_primary()
 	if (consume(TokenType::IDENTIFIER))
 		return new ASTIdentifierNode(prev().get_string("name"));
 	
+	// "(" TYPE ")" <primary>
+	std::unique_ptr<ASTNode> casted_primary;
+	const Token* type_token = nullptr;
+	if (test({
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
+		[&]() { return consume(TokenType::TYPE, type_token); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); },
+		[&]() { return test_parse(std::bind(&Parser::parse_primary, this), casted_primary); }
+		}))
+	{
+		return new ASTCastNode(type_token->get_string("value"), casted_primary.release());
+	}
+
 	// "(" <expr> ")"
 	std::unique_ptr<ASTNode> expr;
 	if(test({

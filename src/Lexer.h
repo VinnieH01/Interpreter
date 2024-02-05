@@ -125,7 +125,7 @@ private:
 
 	const std::vector<std::string> m_types
 	{
-		"int", "float", "char"
+		"int", "float", "char", "string"
 	};
 
 	size_t m_position = 0;
