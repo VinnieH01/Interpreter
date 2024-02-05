@@ -168,6 +168,18 @@ private:
 	const std::unique_ptr<ASTNode> m_expr;
 };
 
+class ASTInputNode : public ASTNode
+{
+public:
+	ASTInputNode()
+	{}
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+};
+
 class ASTBlockNode : public ASTNode
 {
 public:

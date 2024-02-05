@@ -85,6 +85,15 @@ InterpreterResult Interpreter::visit(const ASTPrintNode& node)
 	return {};
 }
 
+InterpreterResult Interpreter::visit(const ASTInputNode&)
+{
+	std::string input;
+	std::cout << "Input: ";
+	std::getline(std::cin, input);
+
+	return { std::make_shared<StringValue>(input) };
+}
+
 template<typename T, typename T2>
 bool Interpreter::number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out)
 {
@@ -142,13 +151,16 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 	if (number_op<char, char>(lhs, rhs, op, value))
 		return value;
 
-	if (op == "+") 
+	if (op == "+" || op == "==")
 	{
 		if (auto* str = dynamic_cast<StringValue*>(lhs))
 		{
 			if (auto* str2 = dynamic_cast<StringValue*>(rhs))
 			{
-				return { std::make_shared<StringValue>(str->text + str2->text) };
+				if (op == "+")
+					return { std::make_shared<StringValue>(str->text + str2->text) };
+				if (op == "==")
+					return { std::make_shared<NumberValue<int>>(str->text == str2->text) };
 			}
 		}
 	}

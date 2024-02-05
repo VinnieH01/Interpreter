@@ -164,7 +164,7 @@ Result<ASTNode*> Parser::parse_stmt()
 	if (test({
 		[this]() { return consume(TokenType::KEYWORD, {"print"}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), print_expr); }
-		}))
+	}))
 	{
 		return new ASTPrintNode(print_expr.release());
 	}
@@ -303,6 +303,12 @@ Result<ASTNode*> Parser::parse_primary()
 
 		if (prev().get_string("data_type") == "string")
 			return new ASTLiteralNode(prev().get_string("value"));
+	}
+
+	//"input"
+	if (consume(TokenType::KEYWORD, { "input" })) 
+	{
+		return new ASTInputNode;
 	}
 
 	// IDENTIFIER

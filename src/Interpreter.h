@@ -17,6 +17,7 @@ public:
 	virtual InterpreterResult visit(const ASTUnaryNode&) override;
 	virtual InterpreterResult visit(const ASTIfNode&) override;
 	virtual InterpreterResult visit(const ASTPrintNode&) override;
+	virtual InterpreterResult visit(const ASTInputNode&) override;
 	virtual InterpreterResult visit(const ASTBinaryNode&) override;
 	virtual InterpreterResult visit(const ASTBlockNode&) override;
 	virtual InterpreterResult visit(const ASTLetNode&) override;

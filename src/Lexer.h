@@ -120,7 +120,7 @@ private:
 
 	const std::vector<std::string> m_keywords
 	{
-		"let", "if", "else", "print"
+		"let", "if", "else", "print", "input"
 	};
 
 	const std::vector<std::string> m_types
