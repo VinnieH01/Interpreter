@@ -11,6 +11,52 @@
 #include "Result.h"
 #include "Value.h"
 
+enum class Operator
+{
+	MINUS,
+	PLUS,
+	TIMES,
+	DIVIDED,
+	GREATER_THAN,
+	LESS_THAN,
+	EQUALS,
+	GEQ,
+	LEQ,
+	AND,
+	OR
+};
+
+static const std::unordered_map<std::string, Operator> op_str_to_enum
+{
+	{"+", Operator::PLUS},
+	{"-", Operator::MINUS},
+	{"*", Operator::TIMES},
+	{"/", Operator::DIVIDED},
+	{">", Operator::GREATER_THAN},
+	{"<", Operator::LESS_THAN},
+	{"==", Operator::EQUALS},
+	{">=", Operator::GEQ},
+	{"<=", Operator::LEQ},
+	{"&&", Operator::AND},
+	{"||", Operator::OR}
+};
+
+enum class Type
+{
+	INT,
+	CHAR,
+	FLOAT,
+	STRING
+};
+
+static const std::unordered_map<std::string, Type> type_str_to_enum
+{
+	{"int", Type::INT},
+	{"char", Type::CHAR},
+	{"float", Type::FLOAT},
+	{"string", Type::STRING}
+};
+
 using InterpreterResult = Result<std::shared_ptr<Value>, const char*>;
 
 class ASTNode
@@ -64,11 +110,11 @@ class ASTUnaryNode : public ASTNode
 {
 public:
 	ASTUnaryNode(const std::string& op, ASTNode* operand)
-		: m_operator(op)
+		: m_operator(op_str_to_enum.at(op))
 		, m_operand(operand)
 	{}
 
-	inline const std::string& get_operator() const { return m_operator; }
+	inline Operator get_operator() const { return m_operator; }
 	inline const std::unique_ptr<ASTNode>& get_operand() const { return m_operand; }
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
@@ -77,7 +123,7 @@ public:
 	}
 
 private:
-	const std::string m_operator;
+	const Operator m_operator;
 	const std::unique_ptr<ASTNode> m_operand;
 };
 
@@ -85,12 +131,12 @@ class ASTBinaryNode : public ASTNode
 {
 public:
 	ASTBinaryNode(const std::string& op, ASTNode* lhs, ASTNode* rhs)
-		: m_operator(op)
+		: m_operator(op_str_to_enum.at(op))
 		, m_lhs(lhs)
 		, m_rhs(rhs)
 	{}
 
-	inline const std::string& get_operator() const { return m_operator; }
+	inline Operator get_operator() const { return m_operator; }
 	inline const std::unique_ptr<ASTNode>& get_lhs() const { return m_lhs; }
 	inline const std::unique_ptr<ASTNode>& get_rhs() const { return m_rhs; }
 
@@ -100,7 +146,7 @@ public:
 	}
 
 private:
-	const std::string m_operator;
+	const Operator m_operator;
 	const std::unique_ptr<ASTNode> m_lhs;
 	const std::unique_ptr<ASTNode> m_rhs;
 };
@@ -172,11 +218,11 @@ class ASTCastNode : public ASTNode
 {
 public:
 	ASTCastNode(const std::string& type, ASTNode* expr)
-		: m_type(type)
+		: m_type(type_str_to_enum.at(type))
 		, m_expr(expr)
 	{}
 
-	inline const std::string& get_type() const { return m_type; }
+	inline Type get_type() const { return m_type; }
 	inline const std::unique_ptr<ASTNode>& get_expr() const { return m_expr; }
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
@@ -185,7 +231,7 @@ public:
 	}
 
 private:
-	const std::string m_type;
+	const Type m_type;
 	const std::unique_ptr<ASTNode> m_expr;
 };
 

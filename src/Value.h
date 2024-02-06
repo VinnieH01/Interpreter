@@ -6,6 +6,7 @@ class Value
 {
 public:
 	virtual ~Value() {}
+	inline virtual bool is_truthy() const { return false; }
 };
 
 template <typename T>
@@ -15,6 +16,7 @@ public:
 	NumberValue(T value) : value(value) {}
 	NumberValue() { value = 0; }
 	operator T() const { return value; }
+	inline virtual bool is_truthy() const override { return value != 0; }
 	T value;
 };
 

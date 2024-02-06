@@ -29,7 +29,7 @@ InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 
 	Value* operand = (*operand_res).get();
 
-	int mult = (node.get_operator() == "-" ? -1 : 1);
+	int mult = (node.get_operator() == Operator::MINUS ? -1 : 1);
 
 	if (auto* val = dynamic_cast<NumberValue<int>*>(operand))
 		return { std::make_shared<NumberValue<int>>((*val) * mult)};
@@ -49,7 +49,7 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 	if (condition_res.is_error())
 		return condition_res;
 
-	if (isTruthy((*condition_res).get()))
+	if ((*condition_res)->is_truthy())
 	{
 		return node.get_then_stmt()->accept(*this);
 	}
@@ -95,7 +95,7 @@ InterpreterResult Interpreter::visit(const ASTCastNode& node)
 	
 	Value* expr_value = (*expr_res).get();
 
-	if (node.get_type() == "int") 
+	if (node.get_type() == Type::INT) 
 	{
 		if (dynamic_cast<NumberValue<int>*>(expr_value))
 			return expr_res;
@@ -120,7 +120,7 @@ InterpreterResult Interpreter::visit(const ASTCastNode& node)
 		}
 	}
 
-	if (node.get_type() == "float")
+	if (node.get_type() == Type::FLOAT)
 	{
 		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
 			return { std::make_shared<NumberValue<float>>(val->value) };
@@ -145,7 +145,7 @@ InterpreterResult Interpreter::visit(const ASTCastNode& node)
 		}
 	}
 
-	if (node.get_type() == "char")
+	if (node.get_type() == Type::CHAR)
 	{
 		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
 			return { std::make_shared<NumberValue<char>>(val->value) };
@@ -153,7 +153,7 @@ InterpreterResult Interpreter::visit(const ASTCastNode& node)
 			return expr_res;
 	}
 
-	if (node.get_type() == "string")
+	if (node.get_type() == Type::STRING)
 	{
 		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
 			return { std::make_shared<StringValue>(std::to_string(val->value)) };
@@ -177,34 +177,48 @@ InterpreterResult Interpreter::visit(const ASTInputNode&)
 }
 
 template<typename T, typename T2>
-bool Interpreter::number_op(Value* lhs, Value* rhs, const std::string& op, std::shared_ptr<Value>& out)
+bool Interpreter::number_op(Value* lhs, Value* rhs, Operator op, std::shared_ptr<Value>& out)
 {
 	if (auto* val = dynamic_cast<NumberValue<T>*>(lhs))
 	{
 		if (auto* val2 = dynamic_cast<NumberValue<T2>*>(rhs))
 		{
-			if (op == "+")
+			switch (op) 
+			{
+			case Operator::PLUS:
 				out = std::make_shared<NumberValue<T>>(val->value + val2->value);
-			else if (op == "-")
+				break;
+			case Operator::MINUS:
 				out = std::make_shared<NumberValue<T>>(val->value - val2->value);
-			else if (op == "*")
+				break;
+			case Operator::TIMES:
 				out = std::make_shared<NumberValue<T>>(val->value * val2->value);
-			else if (op == "/")
+				break;
+			case Operator::DIVIDED:
 				out = std::make_shared<NumberValue<T>>(val->value / val2->value);
-			else if (op == "==")
+				break;
+			case Operator::EQUALS:
 				out = std::make_shared<NumberValue<int>>(val->value == val2->value);
-			else if (op == "<=")
+				break;
+			case Operator::LEQ:
 				out = std::make_shared<NumberValue<int>>(val->value <= val2->value);
-			else if (op == ">=")
+				break;
+			case Operator::GEQ:
 				out = std::make_shared<NumberValue<int>>(val->value >= val2->value);
-			else if (op == "<")
+				break;
+			case Operator::LESS_THAN:
 				out = std::make_shared<NumberValue<int>>(val->value < val2->value);
-			else if (op == ">")
+				break;
+			case Operator::GREATER_THAN:
 				out = std::make_shared<NumberValue<int>>(val->value > val2->value);
-			else if (op == "&&")
-				out = std::make_shared<NumberValue<int>>(isTruthy(val) && isTruthy(val2));
-			else if (op == "||")
-				out = std::make_shared<NumberValue<int>>(isTruthy(val) || isTruthy(val2));
+				break;
+			case Operator::AND:
+				out = std::make_shared<NumberValue<int>>(val->is_truthy() && val2->is_truthy());
+				break;
+			case Operator::OR:
+				out = std::make_shared<NumberValue<int>>(val->is_truthy() || val2->is_truthy());
+				break;
+			}
 		}
 	}
 
@@ -222,7 +236,7 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 	Value* lhs = (*lhs_res).get();
 	Value* rhs = (*rhs_res).get();
 
-	const std::string& op = node.get_operator();
+	Operator op = node.get_operator();
 
 	std::shared_ptr<Value> value(nullptr);
 
@@ -233,15 +247,15 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 	if (number_op<char, char>(lhs, rhs, op, value))
 		return value;
 
-	if (op == "+" || op == "==")
+	if (op == Operator::PLUS || op == Operator::EQUALS)
 	{
 		if (auto* str = dynamic_cast<StringValue*>(lhs))
 		{
 			if (auto* str2 = dynamic_cast<StringValue*>(rhs))
 			{
-				if (op == "+")
+				if (op == Operator::PLUS)
 					return { std::make_shared<StringValue>(str->text + str2->text) };
-				if (op == "==")
+				if (op == Operator::EQUALS)
 					return { std::make_shared<NumberValue<int>>(str->text == str2->text) };
 			}
 		}
@@ -271,16 +285,4 @@ InterpreterResult Interpreter::visit(const ASTLetNode& node)
 	m_symbol_table[node.get_var_name()] = *expr_res;
 
 	return {};
-}
-
-bool Interpreter::isTruthy(Value* value)
-{
-	if (auto* val = dynamic_cast<NumberValue<int>*>((value)))
-		return *val != 0;
-	if (auto* val = dynamic_cast<NumberValue<float>*>((value)))
-		return *val != 0;
-	if (auto* val = dynamic_cast<NumberValue<char>*>((value)))
-		return *val != 0;
-
-	return false;
 }
