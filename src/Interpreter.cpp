@@ -29,18 +29,8 @@ InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
 
 	Value* operand = (*operand_res).get();
 
-	int mult = (node.get_operator() == Operator::MINUS ? -1 : 1);
-
-	if (auto* val = dynamic_cast<NumberValue<int>*>(operand))
-		return { std::make_shared<NumberValue<int>>((*val) * mult)};
-
-	if (auto* val = dynamic_cast<NumberValue<float>*>(operand))
-		return { std::make_shared<NumberValue<float>>((*val) * mult) };
-
-	if (auto* val = dynamic_cast<NumberValue<char>*>(operand))
-		return { std::make_shared<NumberValue<char>>((*val) * mult) };
-
-	return "Unsupported unary operation";
+	UnaryOperationVisitor visitor(node.get_operator());
+	return operand->accept(visitor);
 }
 
 InterpreterResult Interpreter::visit(const ASTIfNode& node)
@@ -71,100 +61,19 @@ InterpreterResult Interpreter::visit(const ASTPrintNode& node)
 
 	Value* value = (*expr_res).get();
 
-	if (auto* val = dynamic_cast<NumberValue<int>*>(value))
-		std::cout << ">> " << val->value << std::endl;
-	else if (auto* val = dynamic_cast<NumberValue<float>*>(value))
-		std::cout << ">> " << val->value << std::endl;
-	else if (auto* val = dynamic_cast<NumberValue<char>*>(value))
-		std::cout << ">> " << val->value << std::endl;
-	else if (auto* val = dynamic_cast<StringValue*>(value))
-		std::cout << ">> " << val->text << std::endl;
-	else
-		return "Unsupported expression in print statement.";
-
-	return {};
+	PrintVisitor visitor;
+	return value->accept(visitor);
 }
 
 InterpreterResult Interpreter::visit(const ASTCastNode& node)
 {
-	//TODO: Refactor this thing and remove duplication (will rework the entire interpreter code soon anyway)
-
 	InterpreterResult expr_res = node.get_expr()->accept(*this);
 	if (expr_res.is_error())
 		return expr_res;
 	
 	Value* expr_value = (*expr_res).get();
-
-	if (node.get_type() == Type::INT) 
-	{
-		if (dynamic_cast<NumberValue<int>*>(expr_value))
-			return expr_res;
-		if (auto* val = dynamic_cast<NumberValue<float>*>(expr_value))
-			return { std::make_shared<NumberValue<int>>(val->value) };
-		if (auto* val = dynamic_cast<NumberValue<char>*>(expr_value))
-			return { std::make_shared<NumberValue<int>>(val->value) };
-
-		if (auto* val = dynamic_cast<StringValue*>(expr_value))
-		{
-			int casted = 0;
-			try
-			{
-				casted = std::stoi(val->text);
-			}
-			catch (const std::exception&) 
-			{
-				return "String is not a valid integer";
-			}
-
-			return { std::make_shared<NumberValue<int>>(casted) };
-		}
-	}
-
-	if (node.get_type() == Type::FLOAT)
-	{
-		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
-			return { std::make_shared<NumberValue<float>>(val->value) };
-		if (dynamic_cast<NumberValue<float>*>(expr_value))
-			return expr_res;
-		if (auto* val = dynamic_cast<NumberValue<char>*>(expr_value))
-			return { std::make_shared<NumberValue<float>>(val->value) };
-
-		if (auto* val = dynamic_cast<StringValue*>(expr_value))
-		{
-			float casted = 0;
-			try
-			{
-				casted = std::stof(val->text);
-			}
-			catch (const std::exception&)
-			{
-				return "String is not a valid float";
-			}
-
-			return { std::make_shared<NumberValue<float>>(casted) };
-		}
-	}
-
-	if (node.get_type() == Type::CHAR)
-	{
-		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
-			return { std::make_shared<NumberValue<char>>(val->value) };
-		if (dynamic_cast<NumberValue<char>*>(expr_value))
-			return expr_res;
-	}
-
-	if (node.get_type() == Type::STRING)
-	{
-		if (auto* val = dynamic_cast<NumberValue<int>*>(expr_value))
-			return { std::make_shared<StringValue>(std::to_string(val->value)) };
-		if (auto* val = dynamic_cast<NumberValue<float>*>(expr_value))
-			return { std::make_shared<StringValue>(std::to_string(val->value)) };
-		if (auto* val = dynamic_cast<NumberValue<char>*>(expr_value))
-			return { std::make_shared<StringValue>(std::string(1, *val)) };
-
-		if (dynamic_cast<StringValue*>(expr_value))
-			return expr_res;
-	}
+	CastVisitor visitor(node.get_type());
+	return expr_value->accept(visitor);
 }
 
 InterpreterResult Interpreter::visit(const ASTInputNode&)
@@ -227,6 +136,8 @@ bool Interpreter::number_op(Value* lhs, Value* rhs, Operator op, std::shared_ptr
 
 InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 {
+	//TODO Use some kind of double dispatch here as well
+
 	InterpreterResult lhs_res = node.get_lhs()->accept(*this);
 	if (lhs_res.is_error()) return lhs_res.get_error();
 
@@ -285,4 +196,98 @@ InterpreterResult Interpreter::visit(const ASTLetNode& node)
 	m_symbol_table[node.get_var_name()] = *expr_res;
 
 	return {};
+}
+
+/*
+ * UNARY
+*/
+
+InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<int>& value)
+{
+	return visit_number(value);
+}
+
+InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<float>& value)
+{
+	return visit_number(value);
+}
+
+InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<char>& value)
+{
+	return visit_number(value);
+}
+
+InterpreterResult Interpreter::UnaryOperationVisitor::visit(const StringValue&)
+{
+	return "Cannot perform unary operation on string";
+}
+
+/*
+ * PRINT
+*/
+
+InterpreterResult Interpreter::PrintVisitor::visit(const NumberValue<int>& value)
+{
+	return print(value.value);
+}
+
+InterpreterResult Interpreter::PrintVisitor::visit(const NumberValue<float>& value)
+{
+	return print(value.value);
+}
+
+InterpreterResult Interpreter::PrintVisitor::visit(const NumberValue<char>& value)
+{
+	return print(value.value);
+}
+
+InterpreterResult Interpreter::PrintVisitor::visit(const StringValue& value)
+{
+	return print(value.text);
+}
+
+/*
+ * CAST
+*/
+
+InterpreterResult Interpreter::CastVisitor::visit(const NumberValue<int>& value)
+{
+	if (type == Type::INT || type == Type::CHAR || type == Type::FLOAT)
+		return num_to_num(value);
+	if (type == Type::STRING)
+		return { std::make_shared<StringValue>(std::to_string(value.value)) };
+
+	return "Cannot cast int to x"; //TODO Create better runtime errors (not just const char*) to replace x
+}
+
+InterpreterResult Interpreter::CastVisitor::visit(const NumberValue<float>& value)
+{
+	if (type == Type::INT || type == Type::FLOAT)
+		return num_to_num(value);
+	if (type == Type::STRING)
+		return { std::make_shared<StringValue>(std::to_string(value.value)) };
+
+	return "Cannot cast float to x";
+}
+
+InterpreterResult Interpreter::CastVisitor::visit(const NumberValue<char>& value)
+{
+	if (type == Type::INT || type == Type::CHAR || type == Type::FLOAT)
+		return num_to_num(value);
+	if (type == Type::STRING)
+		return { std::make_shared<StringValue>(std::to_string(value.value)) };
+
+	return "Cannot cast char to x";
+}
+
+InterpreterResult Interpreter::CastVisitor::visit(const StringValue& value)
+{
+	if (type == Type::INT)
+		return str_to_num<int>(value.text, [](const std::string& str) { return std::stoi(str); });
+	if (type == Type::FLOAT)
+		return str_to_num<float>(value.text, [](const std::string& str) { return std::stof(str); });
+	if (type == Type::STRING)
+		return { std::make_shared<StringValue>(value.text) };
+
+	return "Cannot convert string to x";
 }
