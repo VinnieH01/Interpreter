@@ -50,7 +50,7 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 			return else_stmt->accept(*this);
 	}
 
-	return {};
+	return {}; //TODO separate statements and expressions so these don't have to return empty results
 }
 
 InterpreterResult Interpreter::visit(const ASTPrintNode& node)
@@ -85,59 +85,8 @@ InterpreterResult Interpreter::visit(const ASTInputNode&)
 	return { std::make_shared<StringValue>(input) };
 }
 
-template<typename T, typename T2>
-bool Interpreter::number_op(Value* lhs, Value* rhs, Operator op, std::shared_ptr<Value>& out)
-{
-	if (auto* val = dynamic_cast<NumberValue<T>*>(lhs))
-	{
-		if (auto* val2 = dynamic_cast<NumberValue<T2>*>(rhs))
-		{
-			switch (op) 
-			{
-			case Operator::PLUS:
-				out = std::make_shared<NumberValue<T>>(val->value + val2->value);
-				break;
-			case Operator::MINUS:
-				out = std::make_shared<NumberValue<T>>(val->value - val2->value);
-				break;
-			case Operator::TIMES:
-				out = std::make_shared<NumberValue<T>>(val->value * val2->value);
-				break;
-			case Operator::DIVIDED:
-				out = std::make_shared<NumberValue<T>>(val->value / val2->value);
-				break;
-			case Operator::EQUALS:
-				out = std::make_shared<NumberValue<int>>(val->value == val2->value);
-				break;
-			case Operator::LEQ:
-				out = std::make_shared<NumberValue<int>>(val->value <= val2->value);
-				break;
-			case Operator::GEQ:
-				out = std::make_shared<NumberValue<int>>(val->value >= val2->value);
-				break;
-			case Operator::LESS_THAN:
-				out = std::make_shared<NumberValue<int>>(val->value < val2->value);
-				break;
-			case Operator::GREATER_THAN:
-				out = std::make_shared<NumberValue<int>>(val->value > val2->value);
-				break;
-			case Operator::AND:
-				out = std::make_shared<NumberValue<int>>(val->is_truthy() && val2->is_truthy());
-				break;
-			case Operator::OR:
-				out = std::make_shared<NumberValue<int>>(val->is_truthy() || val2->is_truthy());
-				break;
-			}
-		}
-	}
-
-	return out.get() != nullptr;
-};
-
 InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 {
-	//TODO Use some kind of double dispatch here as well
-
 	InterpreterResult lhs_res = node.get_lhs()->accept(*this);
 	if (lhs_res.is_error()) return lhs_res.get_error();
 
@@ -147,32 +96,8 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 	Value* lhs = (*lhs_res).get();
 	Value* rhs = (*rhs_res).get();
 
-	Operator op = node.get_operator();
-
-	std::shared_ptr<Value> value(nullptr);
-
-	if (number_op<int, int>(lhs, rhs, op, value)) 
-		return value;
-	if (number_op<float, float>(lhs, rhs, op, value))
-		return value;
-	if (number_op<char, char>(lhs, rhs, op, value))
-		return value;
-
-	if (op == Operator::PLUS || op == Operator::EQUALS)
-	{
-		if (auto* str = dynamic_cast<StringValue*>(lhs))
-		{
-			if (auto* str2 = dynamic_cast<StringValue*>(rhs))
-			{
-				if (op == Operator::PLUS)
-					return { std::make_shared<StringValue>(str->text + str2->text) };
-				if (op == Operator::EQUALS)
-					return { std::make_shared<NumberValue<int>>(str->text == str2->text) };
-			}
-		}
-	}
-
-	return "Incompatible types in binary operation";
+	BinaryOperationVisitor visitor(node.get_operator(), rhs);
+	return lhs->accept(visitor);
 }
 
 InterpreterResult Interpreter::visit(const ASTBlockNode& node)
@@ -204,17 +129,17 @@ InterpreterResult Interpreter::visit(const ASTLetNode& node)
 
 InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<int>& value)
 {
-	return visit_number(value);
+	return number_operation(value);
 }
 
 InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<float>& value)
 {
-	return visit_number(value);
+	return number_operation(value);
 }
 
 InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<char>& value)
 {
-	return visit_number(value);
+	return number_operation(value);
 }
 
 InterpreterResult Interpreter::UnaryOperationVisitor::visit(const StringValue&)
@@ -290,4 +215,41 @@ InterpreterResult Interpreter::CastVisitor::visit(const StringValue& value)
 		return { std::make_shared<StringValue>(value.text) };
 
 	return "Cannot convert string to x";
+}
+
+/*
+* BINARY OPERATION
+*/
+
+InterpreterResult Interpreter::BinaryOperationVisitor::visit(const NumberValue<int>& value)
+{
+	return number_operation(value, Type::INT);
+}
+
+InterpreterResult Interpreter::BinaryOperationVisitor::visit(const NumberValue<float>& value)
+{
+	return number_operation(value, Type::FLOAT);
+}
+
+InterpreterResult Interpreter::BinaryOperationVisitor::visit(const NumberValue<char>& value)
+{
+	return number_operation(value, Type::CHAR);
+}
+
+InterpreterResult Interpreter::BinaryOperationVisitor::visit(const StringValue& value)
+{
+	if (auto* other_val = dynamic_cast<StringValue*>(other))
+	{
+		switch (op)
+		{
+		case Operator::PLUS:
+			return { std::make_shared<StringValue>(value.text + other_val->text) };
+		case Operator::EQUALS:
+			return { std::make_shared<NumberValue<int>>(value.text == other_val->text) };
+		}
+
+		return "Binary operator is not supported on string";
+	}
+
+	return "Types are not compatible in binary operation";
 }
