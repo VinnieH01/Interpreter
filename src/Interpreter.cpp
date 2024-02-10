@@ -221,7 +221,7 @@ InterpreterResult Interpreter::CastVisitor::visit(const NumberValue<char>& value
 	if (type == Type::INT || type == Type::CHAR || type == Type::FLOAT)
 		return num_to_num(value);
 	if (type == Type::STRING)
-		return { std::make_shared<StringValue>(std::to_string(value.value)) };
+		return { std::make_shared<StringValue>(std::string(1, value.value)) };
 
 	return "Cannot cast char to x";
 }
