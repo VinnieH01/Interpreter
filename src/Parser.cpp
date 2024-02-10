@@ -207,6 +207,20 @@ Result<ASTNode*> Parser::parse_stmt()
 		return new ASTIfNode(conditional_expr.release(), then_stmt.release(), else_stmt.release());
 	}
 
+	//"while" "(" <expr> ")" <stmt>
+	std::unique_ptr<ASTNode> while_conditional_expr;
+	std::unique_ptr<ASTNode> while_then_stmt;
+	if (test({
+		[this]() { return consume(TokenType::KEYWORD, {"while"}); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), while_conditional_expr); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); },
+		[&]() { return test_parse(std::bind(&Parser::parse_stmt, this), while_then_stmt); }
+		}))
+	{
+		return new ASTWhileNode(while_conditional_expr.release(), while_then_stmt.release());
+	}
+
 	//<expr>
 	return parse_expr();
 }

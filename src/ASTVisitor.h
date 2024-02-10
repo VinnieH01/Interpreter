@@ -13,6 +13,7 @@ public:
 	virtual T visit(const class ASTCastNode&) = 0;
 	virtual T visit(const class ASTInputNode&) = 0;
 	virtual T visit(const class ASTIfNode&) = 0;
+	virtual T visit(const class ASTWhileNode&) = 0;
 	virtual T visit(const class ASTIdentifierNode&) = 0;
 	virtual T visit(const class ASTLetNode&) = 0;
 };

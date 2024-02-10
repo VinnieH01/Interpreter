@@ -41,16 +41,37 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 
 	if ((*condition_res)->is_truthy())
 	{
-		return node.get_then_stmt()->accept(*this);
+		node.get_then_stmt()->accept(*this);
 	}
 	else
 	{
 		ASTNode* else_stmt = node.get_else_stmt().get();
 		if(else_stmt)
-			return else_stmt->accept(*this);
+			else_stmt->accept(*this);
 	}
 
 	return {}; //TODO separate statements and expressions so these don't have to return empty results
+}
+
+InterpreterResult Interpreter::visit(const ASTWhileNode& node)
+{
+	InterpreterResult condition_res = node.get_conditon()->accept(*this);
+	if (condition_res.is_error())
+		return condition_res;
+
+	std::shared_ptr<Value> cond_expr = *condition_res;
+	while (cond_expr->is_truthy())
+	{
+		node.get_then_stmt()->accept(*this);
+
+		InterpreterResult condition_res = node.get_conditon()->accept(*this);
+		if (condition_res.is_error())
+			return condition_res;
+
+		cond_expr = *condition_res;
+	}
+
+	return {};
 }
 
 InterpreterResult Interpreter::visit(const ASTPrintNode& node)

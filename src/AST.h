@@ -196,6 +196,27 @@ private:
 	const std::unique_ptr<ASTNode> m_else_stmt;
 };
 
+class ASTWhileNode : public ASTNode
+{
+public:
+	ASTWhileNode(ASTNode* condition, ASTNode* then_stmt)
+		: m_condition(condition)
+		, m_then_stmt(then_stmt)
+	{}
+
+	inline const std::unique_ptr<ASTNode>& get_conditon() const { return m_condition; }
+	inline const std::unique_ptr<ASTNode>& get_then_stmt() const { return m_then_stmt; }
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+
+private:
+	const std::unique_ptr<ASTNode> m_condition;
+	const std::unique_ptr<ASTNode> m_then_stmt;
+};
+
 class ASTPrintNode : public ASTNode
 {
 public:

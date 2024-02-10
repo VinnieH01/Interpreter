@@ -4,6 +4,7 @@
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
                     | <if>
+					| "while" "(" <expr> ")" <stmt>
                     | <expr>
 
 <if>              ::= "if" "(" <expr> ")" <stmt>
