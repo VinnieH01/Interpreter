@@ -176,6 +176,22 @@ InterpreterResult Interpreter::visit(const ASTAssignmentNode& node)
 	return {};
 }
 
+InterpreterResult Interpreter::visit(const ASTFunctionNode& node)
+{
+	function_table[node.get_name()] = node.get_block().get();
+	return {};
+}
+
+InterpreterResult Interpreter::visit(const ASTCallNode& node)
+{
+	if(function_table.find(node.get_name()) != function_table.end()) 
+	{
+		return function_table.at(node.get_name())->accept(*this);
+	}
+
+	return "Function does not exist";
+}
+
 /*
  * UNARY
 */

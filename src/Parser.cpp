@@ -117,7 +117,7 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<Error>> Parser::parse(
 
 	while (!consume(TokenType::EOF_TOKEN))
 	{
-		Result<ASTNode*> res = parse_stmt();
+		Result<ASTNode*> res = parse_top_level();
 		if (res.is_error())
 		{
 			errors.push_back(res.get_error());
@@ -139,9 +139,43 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<Error>> Parser::parse(
 	return stmts;
 }
 
+Result<ASTNode*> Parser::parse_top_level()
+{
+	//"fn" IDENTIFIER "(" ")"
+	std::unique_ptr<ASTNode> let_expr;
+	const Token* identifier = nullptr;
+	if (test({
+		[this]() { return consume(TokenType::KEYWORD, {"fn"}); },
+		[&]() { return consume(TokenType::IDENTIFIER, identifier); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
+		}))
+	{
+		//"{" (<stmt>;*) "}" //TODO Remove duplication
+		if (consume(TokenType::SPECIAL_CHAR, { "{" }))
+		{
+			std::vector<std::unique_ptr<ASTNode>> stmts;
+			while (!consume(TokenType::SPECIAL_CHAR, { "}" }))
+			{
+				Result<ASTNode*> res = parse_stmt();
+				if (res.is_error())
+					return res;
+				else
+					stmts.emplace_back(*res);
+
+				if (!consume(TokenType::SPECIAL_CHAR, { ";" }))
+					return Error("Expected ';' after statement", m_current_token->get_position());
+			}
+			return new ASTFunctionNode(identifier->get_string("name"), new ASTBlockNode(std::move(stmts)));
+		}
+	}
+
+	return parse_stmt();
+}
+
 Result<ASTNode*> Parser::parse_stmt()
 {
-	//"{" <program> "}"
+	//"{" (<stmt>;*) "}"
 	if (consume(TokenType::SPECIAL_CHAR, {"{"}))
 	{
 		std::vector<std::unique_ptr<ASTNode>> stmts;
@@ -157,6 +191,17 @@ Result<ASTNode*> Parser::parse_stmt()
 				return Error("Expected ';' after statement", m_current_token->get_position());
 		}
 		return new ASTBlockNode(std::move(stmts));
+	}
+
+	//IDENTIFIER "(" ")"
+	const Token* call_fn = nullptr;
+	if (test({
+		[&]() { return consume(TokenType::IDENTIFIER, call_fn); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
+		}))
+	{
+		return new ASTCallNode(call_fn->get_string("name"));
 	}
 
 	//"print" <expr>

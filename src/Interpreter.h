@@ -30,8 +30,11 @@ public:
 	virtual InterpreterResult visit(const ASTBlockNode&) override;
 	virtual InterpreterResult visit(const ASTLetNode&) override;
 	virtual InterpreterResult visit(const ASTAssignmentNode&) override;
+	virtual InterpreterResult visit(const ASTFunctionNode&) override;
+	virtual InterpreterResult visit(const ASTCallNode&) override;
 private:
 	ScopeManager scope_manager;
+	std::unordered_map<std::string, ASTNode*> function_table;
 
 	struct UnaryOperationVisitor : ValueVisitor
 	{

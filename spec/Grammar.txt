@@ -1,6 +1,10 @@
-<program>         ::= (<stmt> ";")*
+<program>         ::= (<top-level> ";")*
 
-<stmt>            ::= "{" <program> "}"
+<top-level>       ::= "fn" IDENTIFIER "(" ")" "{" (<stmt>;*) "}"
+                    | <stmt>
+
+<stmt>            ::= "{" (<stmt>;*) "}"
+                    | IDENTIFIER "(" ")"
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
                     | IDENTIFIER ":=" <expr>

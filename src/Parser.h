@@ -23,6 +23,8 @@ private:
 	bool consume(TokenType type, const Token*& tok);
 	bool test_parse(const std::function<Result<ASTNode*>()>& parse_fn, std::unique_ptr<ASTNode>& result);
 
+	Result<ASTNode*> parse_top_level();
+
 	Result<ASTNode*> parse_stmt();
 	Result<ASTNode*> parse_expr();
 
