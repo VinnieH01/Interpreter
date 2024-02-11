@@ -5,85 +5,10 @@
 #include <vector>
 #include <string>
 #include <array>
-#include "Result.h"
 #include <regex>
-#include "Error.h"
 
-enum class TokenType
-{
-	EOF_TOKEN,
-	SPECIAL_CHAR,
-	IDENTIFIER,
-	LITERAL,
-	OPERATOR,
-	KEYWORD,
-	TYPE
-};
-
-struct Token
-{
-	const TokenType type;
-
-	inline Token(TokenType t, std::unordered_map<std::string, std::string> m, size_t position)
-		: type(t)
-		, m_meta(m)
-		, m_position(position)
-	{}
-
-	inline void print() const
-	{
-		if (m_meta.empty())
-		{
-			std::cout << (int)type;
-		}
-		else
-		{
-			std::cout << (int)type << " [";
-			for (const auto& entry : m_meta)
-			{
-				std::cout << "'" << entry.first << "'" << ":" << " '" << entry.second << "', ";
-			}
-			std::cout << "]";
-		}
-	}
-
-	inline size_t get_position() const { return m_position; }
-
-	inline const std::string& get_string(const std::string& key) const 
-	{
-		return m_meta.at(key); 
-	}
-
-	inline int get_int(const std::string& key) const
-	{
-		return std::stoi(m_meta.at(key).c_str());
-	}
-
-	inline float get_float(const std::string& key) const
-	{
-		return std::stof(m_meta.at(key).c_str());
-	}
-
-	inline char get_char(const std::string& key) const
-	{
-		return m_meta.at(key).c_str()[0];
-	}
-
-	inline bool is(TokenType type, const std::string& value) const
-	{
-		return this->type == type && m_meta.count("value") && m_meta.at("value") == value;
-	}
-
-	//This only exists beacause it's clearer than saying !tok.is(...)
-	inline bool is_not(TokenType type, const std::string& value) const
-	{
-		return !is(type, value);
-	}
-
-private:
-	const std::unordered_map<std::string, std::string> m_meta;
-	const size_t m_position;
-};
+#include "Result.h"
+#include "Token.h"
 
 class Lexer
 {

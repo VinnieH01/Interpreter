@@ -5,7 +5,6 @@
 #include <array>
 
 #include "Lexer.h"
-#include "Error.h"
 
 Result<std::vector<Token>> Lexer::tokenize(std::string text) 
 {

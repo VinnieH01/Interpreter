@@ -7,8 +7,6 @@
 #include <array>
 
 #include "ASTVisitor.h"
-
-#include "Result.h"
 #include "Value.h"
 
 enum class Operator

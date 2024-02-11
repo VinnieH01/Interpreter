@@ -1,8 +1,10 @@
 #pragma once
 
-#include "lexer.h"
-#include "AST.h"
 #include <functional>
+
+#include "Token.h"
+#include "Result.h"
+#include "AST.h"
 
 class Parser
 {

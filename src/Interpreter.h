@@ -2,10 +2,12 @@
 
 #include <unordered_map>
 #include <string>
+#include <functional>
+
 #include "ASTVisitor.h"
 #include "AST.h"
-#include <functional>
 #include "ScopeManager.h"
+#include "Value.h"
 
 using InterpreterResult = Result<std::shared_ptr<Value>, const char*>;
 
@@ -31,7 +33,6 @@ public:
 private:
 	ScopeManager scope_manager;
 
-public:
 	struct UnaryOperationVisitor : ValueVisitor
 	{
 		UnaryOperationVisitor(Operator op)

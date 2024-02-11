@@ -1,10 +1,11 @@
 #pragma once
-#include "Result.h"
 
 template<typename T>
 class ASTVisitor
 {
 public:
+	virtual ~ASTVisitor() = default;
+
 	virtual T visit(const class ASTLiteralNode&) = 0;
 	virtual T visit(const class ASTUnaryNode&) = 0;
 	virtual T visit(const class ASTBlockNode&) = 0;

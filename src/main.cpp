@@ -6,7 +6,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "lexer.h"
+#include "Lexer.h"
 #include "AST.h"
 #include "Interpreter.h"
 

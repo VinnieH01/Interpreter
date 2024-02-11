@@ -10,6 +10,8 @@ class NumberValue;
 class ValueVisitor 
 {
 public:
+	virtual ~ValueVisitor() = default;
+
 	virtual Result<std::shared_ptr<class Value>, const char*> visit(const NumberValue<int>&) = 0;
 	virtual Result<std::shared_ptr<class Value>, const char*> visit(const NumberValue<float>&) = 0;
 	virtual Result<std::shared_ptr<class Value>, const char*> visit(const NumberValue<char>&) = 0;
