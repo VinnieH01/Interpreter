@@ -3,6 +3,7 @@
 <stmt>            ::= "{" <program> "}"
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
+                    | IDENTIFIER ":=" <expr>
                     | <if>
 					| "while" "(" <expr> ")" <stmt>
                     | <expr>

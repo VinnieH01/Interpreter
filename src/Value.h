@@ -14,6 +14,7 @@ public:
 	virtual Result<std::shared_ptr<class Value>, const char*> visit(const NumberValue<float>&) = 0;
 	virtual Result<std::shared_ptr<class Value>, const char*> visit(const NumberValue<char>&) = 0;
 	virtual Result<std::shared_ptr<class Value>, const char*> visit(const class StringValue&) = 0;
+	virtual Result<std::shared_ptr<class Value>, const char*> visit(const class ReferenceValue&) = 0;
 };
 
 class Value
@@ -49,4 +50,19 @@ public:
 	{
 		return visitor.visit(*this);
 	}
+};
+
+class ReferenceValue : public Value
+{
+public:
+	inline ReferenceValue(std::shared_ptr<Value>* variable)
+		: m_value_ptr(variable) {}
+	inline const std::shared_ptr<Value>& get_variable_value() const { return *m_value_ptr; }
+	inline void set_variable_value(const std::shared_ptr<Value>& value) const { *m_value_ptr = value; }
+	inline virtual Result<std::shared_ptr<Value>, const char*> accept(ValueVisitor& visitor) const override
+	{
+		return visitor.visit(*this);
+	}
+private:
+	std::shared_ptr<Value>* m_value_ptr;
 };

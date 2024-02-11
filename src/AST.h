@@ -172,6 +172,27 @@ private:
 	const std::unique_ptr<ASTNode> m_expr;
 };
 
+class ASTAssignmentNode : public ASTNode
+{
+public:
+	ASTAssignmentNode(ASTIdentifierNode* variable, ASTNode* expr)
+		: m_variable(variable)
+		, m_expr(expr)
+	{}
+
+	inline const std::unique_ptr<ASTIdentifierNode>& get_variable() const { return m_variable; }
+	inline const std::unique_ptr<ASTNode>& get_expr() const { return m_expr; }
+
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+
+private:
+	const std::unique_ptr<ASTIdentifierNode> m_variable;
+	const std::unique_ptr<ASTNode> m_expr;
+};
+
 class ASTIfNode : public ASTNode
 {
 public:

@@ -5,12 +5,15 @@
 #include "ASTVisitor.h"
 #include "AST.h"
 #include <functional>
+#include "ScopeManager.h"
 
 using InterpreterResult = Result<std::shared_ptr<Value>, const char*>;
 
 class Interpreter : public ASTVisitor<InterpreterResult>
 {
 public:
+	Interpreter();
+
 	InterpreterResult interpret(const ASTNode&);
 
 	virtual InterpreterResult visit(const ASTLiteralNode&) override;
@@ -24,8 +27,9 @@ public:
 	virtual InterpreterResult visit(const ASTBinaryNode&) override;
 	virtual InterpreterResult visit(const ASTBlockNode&) override;
 	virtual InterpreterResult visit(const ASTLetNode&) override;
+	virtual InterpreterResult visit(const ASTAssignmentNode&) override;
 private:
-	std::unordered_map<std::string, std::shared_ptr<Value>> m_symbol_table;
+	ScopeManager scope_manager;
 
 public:
 	struct UnaryOperationVisitor : ValueVisitor
@@ -33,6 +37,7 @@ public:
 		UnaryOperationVisitor(Operator op)
 			: op(op) {};
 
+		InterpreterResult visit(const ReferenceValue&) override;
 		InterpreterResult visit(const NumberValue<int>&) override;
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
@@ -55,6 +60,7 @@ public:
 			, other(other)
 		{};
 
+		InterpreterResult visit(const ReferenceValue&) override;
 		InterpreterResult visit(const NumberValue<int>&) override;
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
@@ -72,6 +78,7 @@ public:
 			//But for now this is an okay and simple solution
 
 			//Implicit cast to compatible number type
+			//This also converts references to values
 			CastVisitor visitor(type);
 			InterpreterResult rhs_res = other->accept(visitor);
 			if (rhs_res.is_error())
@@ -116,6 +123,7 @@ public:
 
 	struct PrintVisitor : ValueVisitor
 	{
+		InterpreterResult visit(const ReferenceValue&) override;
 		InterpreterResult visit(const NumberValue<int>&) override;
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
@@ -134,6 +142,7 @@ public:
 		CastVisitor(Type type)
 			: type(type) {};
 
+		InterpreterResult visit(const ReferenceValue&) override;
 		InterpreterResult visit(const NumberValue<int>&) override;
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;

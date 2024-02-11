@@ -3,6 +3,12 @@
 #include "Value.h"
 #include <iostream>
 
+Interpreter::Interpreter()
+{
+	//Add global scope
+	scope_manager.push_scope();
+}
+
 InterpreterResult Interpreter::interpret(const ASTNode& node)
 {
 	return node.accept(*this);
@@ -15,10 +21,9 @@ InterpreterResult Interpreter::visit(const ASTLiteralNode& node)
 
 InterpreterResult Interpreter::visit(const ASTIdentifierNode& node)
 {
-	if (m_symbol_table.find(node.get_name()) == m_symbol_table.end())
-		return "Symbol does not exist error";
-
-	return m_symbol_table.at(node.get_name());
+	if (const auto& variable = scope_manager.get_variable(node.get_name()))
+		return { std::make_shared<ReferenceValue>(variable) };
+	return "Symbol does not exist error";
 }
 
 InterpreterResult Interpreter::visit(const ASTUnaryNode& node)
@@ -123,12 +128,14 @@ InterpreterResult Interpreter::visit(const ASTBinaryNode& node)
 
 InterpreterResult Interpreter::visit(const ASTBlockNode& node)
 {
+	scope_manager.push_scope();
 	for (const auto& stmt : node.get_stmts())
 	{
 		InterpreterResult stmt_res = stmt->accept(*this);
 		if (stmt_res.is_error()) 
 			return stmt_res;
 	}
+	scope_manager.pop_scope();
 
 	return {};
 }
@@ -139,7 +146,33 @@ InterpreterResult Interpreter::visit(const ASTLetNode& node)
 	if (expr_res.is_error()) 
 		return expr_res;
 
-	m_symbol_table[node.get_var_name()] = *expr_res;
+	//If the expression returned a reference we want to dereference it 
+	std::shared_ptr<Value> var_value = *expr_res;
+	if (const auto& ref = dynamic_cast<ReferenceValue*>(var_value.get()))
+		var_value = ref->get_variable_value();
+	
+	scope_manager.add_variable(node.get_var_name(), var_value);
+
+	return {};
+}
+
+InterpreterResult Interpreter::visit(const ASTAssignmentNode& node)
+{
+	InterpreterResult literal_res = visit(*node.get_variable().get());
+	if (literal_res.is_error())
+		return literal_res;
+
+	InterpreterResult expr_res = node.get_expr()->accept(*this);
+	if (expr_res.is_error())
+		return expr_res;
+
+	//If the expression returned a reference we want to dereference it 
+	std::shared_ptr<Value> var_value = *expr_res;
+	if (const auto& ref = dynamic_cast<ReferenceValue*>(var_value.get()))
+		var_value = ref->get_variable_value();
+
+	//Literal node visit always returns reference
+	static_cast<ReferenceValue*>((*literal_res).get())->set_variable_value(var_value);
 
 	return {};
 }
@@ -147,6 +180,11 @@ InterpreterResult Interpreter::visit(const ASTLetNode& node)
 /*
  * UNARY
 */
+
+InterpreterResult Interpreter::UnaryOperationVisitor::visit(const ReferenceValue& value)
+{
+	return value.get_variable_value()->accept(*this);
+}
 
 InterpreterResult Interpreter::UnaryOperationVisitor::visit(const NumberValue<int>& value)
 {
@@ -172,6 +210,11 @@ InterpreterResult Interpreter::UnaryOperationVisitor::visit(const StringValue&)
  * PRINT
 */
 
+InterpreterResult Interpreter::PrintVisitor::visit(const ReferenceValue& value)
+{
+	return value.get_variable_value()->accept(*this);
+}
+
 InterpreterResult Interpreter::PrintVisitor::visit(const NumberValue<int>& value)
 {
 	return print(value.value);
@@ -195,6 +238,11 @@ InterpreterResult Interpreter::PrintVisitor::visit(const StringValue& value)
 /*
  * CAST
 */
+
+InterpreterResult Interpreter::CastVisitor::visit(const ReferenceValue& value)
+{
+	return value.get_variable_value()->accept(*this);
+}
 
 InterpreterResult Interpreter::CastVisitor::visit(const NumberValue<int>& value)
 {
@@ -242,6 +290,11 @@ InterpreterResult Interpreter::CastVisitor::visit(const StringValue& value)
 * BINARY OPERATION
 */
 
+InterpreterResult Interpreter::BinaryOperationVisitor::visit(const ReferenceValue& value)
+{
+	return value.get_variable_value()->accept(*this);
+}
+
 InterpreterResult Interpreter::BinaryOperationVisitor::visit(const NumberValue<int>& value)
 {
 	return number_operation(value, Type::INT);
@@ -259,6 +312,9 @@ InterpreterResult Interpreter::BinaryOperationVisitor::visit(const NumberValue<c
 
 InterpreterResult Interpreter::BinaryOperationVisitor::visit(const StringValue& value)
 {
+	if (auto* ref = dynamic_cast<ReferenceValue*>(other))
+		other = ref->get_variable_value().get();
+
 	if (auto* other_val = dynamic_cast<StringValue*>(other))
 	{
 		switch (op)

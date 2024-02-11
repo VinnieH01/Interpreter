@@ -182,6 +182,18 @@ Result<ASTNode*> Parser::parse_stmt()
 		return new ASTLetNode(identifier->get_string("name"), let_expr.release());
 	}
 
+	//IDENTIFIER ":=" <expr>
+	std::unique_ptr<ASTNode> assignment_expr;
+	const Token* assignment_identifier = nullptr;
+	if (test({
+		[&]() { return consume(TokenType::IDENTIFIER, assignment_identifier); },
+		[this]() { return consume(TokenType::OPERATOR, {":="}); },
+		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), assignment_expr); }
+		}))
+	{
+		return new ASTAssignmentNode(new ASTIdentifierNode(assignment_identifier->get_string("name")), assignment_expr.release());
+	}
+
 	//<if>
 	std::unique_ptr<ASTNode> conditional_expr;
 	std::unique_ptr<ASTNode> then_stmt;
