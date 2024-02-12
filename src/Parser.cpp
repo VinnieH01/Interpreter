@@ -141,18 +141,37 @@ Result<std::vector<std::unique_ptr<ASTNode>>, std::vector<Error>> Parser::parse(
 
 Result<ASTNode*> Parser::parse_top_level()
 {
-	//"fn" IDENTIFIER "(" ")"
+	//"fn" IDENTIFIER "("
 	std::unique_ptr<ASTNode> let_expr;
 	const Token* identifier = nullptr;
 	if (test({
 		[this]() { return consume(TokenType::KEYWORD, {"fn"}); },
 		[&]() { return consume(TokenType::IDENTIFIER, identifier); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); }
 		}))
 	{
+		//(IDENTIFIER ("," IDENTIFIER)*)?
+		std::vector<std::string> arg_names;
+		if (consume(TokenType::IDENTIFIER)) 
+		{
+			arg_names.push_back(prev().get_string("name"));
+			while (consume(TokenType::SPECIAL_CHAR, {","}))
+			{
+				if (consume(TokenType::IDENTIFIER))
+					arg_names.push_back(prev().get_string("name"));
+				else
+					return Error("Expected argument after ','", m_current_token->get_position());
+			}
+		}
+		
+		//")"
+		if (!consume(TokenType::SPECIAL_CHAR, { ")" })) 
+		{
+			return Error("Expected ')' after arguments", m_current_token->get_position());
+		}
+
 		//"{" (<stmt>;*) "}" //TODO Remove duplication
-		if (consume(TokenType::SPECIAL_CHAR, { "{" }))
+		if (consume(TokenType::SPECIAL_CHAR, {"{"}))
 		{
 			std::vector<std::unique_ptr<ASTNode>> stmts;
 			while (!consume(TokenType::SPECIAL_CHAR, { "}" }))
@@ -166,8 +185,9 @@ Result<ASTNode*> Parser::parse_top_level()
 				if (!consume(TokenType::SPECIAL_CHAR, { ";" }))
 					return Error("Expected ';' after statement", m_current_token->get_position());
 			}
-			return new ASTFunctionNode(identifier->get_string("name"), new ASTBlockNode(std::move(stmts)));
+			return new ASTFunctionNode(identifier->get_string("name"), arg_names, new ASTBlockNode(std::move(stmts)));
 		}
+		return Error("Function has no body", m_current_token->get_position());
 	}
 
 	return parse_stmt();
@@ -380,15 +400,39 @@ Result<ASTNode*> Parser::parse_primary()
 		return new ASTInputNode;
 	}
 
-	//IDENTIFIER "(" ")"
+	//IDENTIFIER "("
 	const Token* call_fn = nullptr;
 	if (test({
 		[&]() { return consume(TokenType::IDENTIFIER, call_fn); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); }
 		}))
 	{
-		return new ASTCallNode(call_fn->get_string("name"));
+		//(<expr> ("," <expr>)*)?
+		std::vector<std::unique_ptr<ASTNode>> args;
+		std::unique_ptr<ASTNode> arg;
+		if (test({
+			[&]() { return test_parse(std::bind(&Parser::parse_expr, this), arg); }
+		}))
+		{
+			args.emplace_back(arg.release());
+			while (consume(TokenType::SPECIAL_CHAR, { "," }))
+			{
+				if (test({
+					[&]() { return test_parse(std::bind(&Parser::parse_expr, this), arg); }
+				}))
+					args.emplace_back(arg.release());
+				else
+					return Error("Expected argument after ','", m_current_token->get_position());
+			}
+		}
+
+		//")"
+		if (!consume(TokenType::SPECIAL_CHAR, { ")" }))
+		{
+			return Error("Expected ')' after arguments", m_current_token->get_position());
+		}
+
+		return new ASTCallNode(call_fn->get_string("name"), std::move(args));
 	}
 
 	// IDENTIFIER

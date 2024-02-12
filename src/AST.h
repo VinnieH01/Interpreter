@@ -173,12 +173,14 @@ private:
 class ASTFunctionNode : public ASTNode
 {
 public:
-	ASTFunctionNode(const std::string& fn_name, ASTBlockNode* block)
+	ASTFunctionNode(const std::string& fn_name, const std::vector<std::string>& args, ASTBlockNode* block)
 		: m_fn_name(fn_name)
+		, m_args(args)
 		, m_block(block)
 	{}
 
 	inline const std::string& get_name() const { return m_fn_name; }
+	inline const std::vector<std::string>& get_args() const { return m_args; }
 	inline const std::unique_ptr<ASTBlockNode>& get_block() const { return m_block; }
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
@@ -188,17 +190,20 @@ public:
 
 private:
 	const std::string m_fn_name;
+	const std::vector<std::string> m_args;
 	const std::unique_ptr<ASTBlockNode> m_block;
 };
 
 class ASTCallNode : public ASTNode
 {
 public:
-	ASTCallNode(const std::string& fn_name)
+	ASTCallNode(const std::string& fn_name, std::vector<std::unique_ptr<ASTNode>> args)
 		: m_fn_name(fn_name)
+		, m_args(std::move(args))
 	{}
 
 	inline const std::string& get_name() const { return m_fn_name; }
+	inline const std::vector<std::unique_ptr<ASTNode>>& get_args() const { return m_args; }
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
@@ -207,6 +212,7 @@ public:
 
 private:
 	const std::string m_fn_name;
+	const std::vector<std::unique_ptr<ASTNode>> m_args;
 };
 
 

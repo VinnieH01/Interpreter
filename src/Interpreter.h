@@ -34,6 +34,8 @@ public:
 	virtual InterpreterResult visit(const ASTCallNode&) override;
 	virtual InterpreterResult visit(const ASTReturnNode&) override;
 private:
+	InterpreterResult init_var(const std::string& name, const std::unique_ptr<ASTNode>& expr);
+
 	//Can reuse the same void everywhere
 	std::shared_ptr<VoidValue> void_val = std::make_shared<VoidValue>();
 
@@ -43,7 +45,14 @@ private:
 	} runtime_data;
 
 	ScopeManager scope_manager;
-	std::unordered_map<std::string, ASTBlockNode*> function_table;
+
+	struct Function
+	{
+		ASTBlockNode* body;
+		const std::vector<std::string>* arg_names;
+	};
+
+	std::unordered_map<std::string, Function> function_table;
 
 	struct UnaryOperationVisitor : ValueVisitor
 	{

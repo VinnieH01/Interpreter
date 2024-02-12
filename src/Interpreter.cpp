@@ -141,20 +141,25 @@ InterpreterResult Interpreter::visit(const ASTBlockNode& node)
 	return {};
 }
 
-InterpreterResult Interpreter::visit(const ASTLetNode& node)
+InterpreterResult Interpreter::init_var(const std::string& name, const std::unique_ptr<ASTNode>& expr)
 {
-	InterpreterResult expr_res = node.get_expr()->accept(*this);
-	if (expr_res.is_error()) 
+	InterpreterResult expr_res = expr->accept(*this);
+	if (expr_res.is_error())
 		return expr_res;
 
 	//If the expression returned a reference we want to dereference it 
 	std::shared_ptr<Value> var_value = *expr_res;
 	if (const auto& ref = dynamic_cast<ReferenceValue*>(var_value.get()))
 		var_value = ref->get_variable_value();
-	
-	scope_manager.add_variable(node.get_var_name(), var_value);
+
+	scope_manager.add_variable(name, var_value);
 
 	return {};
+}
+
+InterpreterResult Interpreter::visit(const ASTLetNode& node)
+{
+	return init_var(node.get_var_name(), node.get_expr());
 }
 
 InterpreterResult Interpreter::visit(const ASTAssignmentNode& node)
@@ -180,7 +185,7 @@ InterpreterResult Interpreter::visit(const ASTAssignmentNode& node)
 
 InterpreterResult Interpreter::visit(const ASTFunctionNode& node)
 {
-	function_table[node.get_name()] = node.get_block().get();
+	function_table[node.get_name()] = { node.get_block().get(), &node.get_args()};
 	return {};
 }
 
@@ -190,20 +195,34 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 	{
 		++runtime_data.n_function_calls;
 
+		Function func = function_table.at(node.get_name());
+
+		if (func.arg_names->size() != node.get_args().size())
+			return "Incorrect number of arguments in function call";
+
+		//Place arguments in their own scope
+		scope_manager.push_scope();
+		for(size_t i = 0; i < func.arg_names->size(); ++i) 
+		{
+			init_var(func.arg_names->at(i), node.get_args().at(i));
+		}
+
+		std::shared_ptr<Value> return_val;
 		try
 		{
-			InterpreterResult res = visit(*function_table.at(node.get_name()));
+			InterpreterResult res = visit(*func.body);
 			if (res.is_error())
 				return res;
-
-			--runtime_data.n_function_calls;
-			return { void_val };
+			return_val = void_val;
 		}
-		catch (const std::shared_ptr<Value>& return_val)
+		catch (const std::shared_ptr<Value>& returned)
 		{
-			--runtime_data.n_function_calls;
-			return return_val;
+			return_val = returned;
 		}
+
+		--runtime_data.n_function_calls;
+		scope_manager.pop_scope();
+		return return_val;
 	}
 
 	return "Function does not exist";

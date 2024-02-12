@@ -1,6 +1,6 @@
 <program>         ::= (<top-level> ";")*
 
-<top-level>       ::= "fn" IDENTIFIER "(" ")" "{" (<stmt>;*) "}"
+<top-level>       ::= "fn" IDENTIFIER "(" (IDENTIFIER ("," IDENTIFIER)*)? ")" "{" (<stmt>;*) "}"
                     | <stmt>
 
 <stmt>            ::= "{" (<stmt>;*) "}"
@@ -34,7 +34,7 @@
 					
 <primary>         ::= LITERAL
                     | IDENTIFIER
-                    | IDENTIFIER "(" ")"
+                    | IDENTIFIER "(" (<expr> ("," <expr>)*)? ")"
                     | "input"
                     | "(" TYPE ")" <primary>
                     | "(" <expr> ")"

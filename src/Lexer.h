@@ -40,7 +40,7 @@ private:
 		{ CHAR_LITERAL, std::regex("'(.)'")},
 		{ STRING_LITERAL, std::regex("\"(.+?)\"")},
 		{ OPERATOR, std::regex("(?::=|&&|\\|\\||>=|<=|==|[+\\-*\\/<>])")},
-		{ SPECIAL, std::regex("[;()\\[\\]{}]")},
+		{ SPECIAL, std::regex("[;()\\[\\]{},]")},
 	};
 
 	const std::vector<std::string> m_keywords
