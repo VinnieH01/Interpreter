@@ -37,6 +37,11 @@ private:
 	//Can reuse the same void everywhere
 	std::shared_ptr<VoidValue> void_val = std::make_shared<VoidValue>();
 
+	struct 
+	{
+		size_t n_function_calls = 0;
+	} runtime_data;
+
 	ScopeManager scope_manager;
 	std::unordered_map<std::string, ASTBlockNode*> function_table;
 

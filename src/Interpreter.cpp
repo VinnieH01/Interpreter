@@ -45,16 +45,16 @@ InterpreterResult Interpreter::visit(const ASTIfNode& node)
 
 	if ((*condition_res)->is_truthy())
 	{
-		node.get_then_stmt()->accept(*this);
+		return node.get_then_stmt()->accept(*this);
 	}
 	else
 	{
 		ASTNode* else_stmt = node.get_else_stmt().get();
 		if(else_stmt)
-			else_stmt->accept(*this);
+			return else_stmt->accept(*this);
 	}
 
-	return {}; //TODO separate statements and expressions so these don't have to return empty results
+	return {};
 }
 
 InterpreterResult Interpreter::visit(const ASTWhileNode& node)
@@ -66,7 +66,9 @@ InterpreterResult Interpreter::visit(const ASTWhileNode& node)
 	std::shared_ptr<Value> cond_expr = *condition_res;
 	while (cond_expr->is_truthy())
 	{
-		node.get_then_stmt()->accept(*this);
+		InterpreterResult stmt_res = node.get_then_stmt()->accept(*this);
+		if (stmt_res.is_error())
+			return stmt_res;
 
 		InterpreterResult condition_res = node.get_conditon()->accept(*this);
 		if (condition_res.is_error())
@@ -186,12 +188,20 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 {
 	if(function_table.find(node.get_name()) != function_table.end()) 
 	{
+		++runtime_data.n_function_calls;
+
 		try
 		{
-			return visit(*function_table.at(node.get_name()));
+			InterpreterResult res = visit(*function_table.at(node.get_name()));
+			if (res.is_error())
+				return res;
+
+			--runtime_data.n_function_calls;
+			return { void_val };
 		}
 		catch (const std::shared_ptr<Value>& return_val)
 		{
+			--runtime_data.n_function_calls;
 			return return_val;
 		}
 	}
@@ -201,6 +211,9 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 
 InterpreterResult Interpreter::visit(const ASTReturnNode& node)
 {
+	if (runtime_data.n_function_calls == 0)
+		return "Cannot return outside function";
+
 	if(node.get_expr()) 
 	{
 		InterpreterResult expr_res = node.get_expr()->accept(*this);
