@@ -10,6 +10,7 @@
                     | IDENTIFIER ":=" <expr>
                     | <if>
 					| "while" "(" <expr> ")" <stmt>
+                    | "ret"
                     | <expr>
 
 <if>              ::= "if" "(" <expr> ")" <stmt>

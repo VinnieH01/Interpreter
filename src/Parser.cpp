@@ -214,6 +214,12 @@ Result<ASTNode*> Parser::parse_stmt()
 		return new ASTPrintNode(print_expr.release());
 	}
 
+	//"ret"
+	if (consume(TokenType::KEYWORD, { "ret" })) 
+	{
+		return new ASTReturnNode;
+	}
+
 	//"let" IDENTIFIER ":=" <expr>
 	std::unique_ptr<ASTNode> let_expr;
 	const Token* identifier = nullptr;

@@ -209,6 +209,16 @@ private:
 	const std::string m_fn_name;
 };
 
+
+class ASTReturnNode : public ASTNode
+{
+public:
+	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
+	{
+		return visitor.visit(*this);
+	}
+};
+
 class ASTAssignmentNode : public ASTNode
 {
 public:

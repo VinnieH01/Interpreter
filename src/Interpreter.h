@@ -32,6 +32,7 @@ public:
 	virtual InterpreterResult visit(const ASTAssignmentNode&) override;
 	virtual InterpreterResult visit(const ASTFunctionNode&) override;
 	virtual InterpreterResult visit(const ASTCallNode&) override;
+	virtual InterpreterResult visit(const ASTReturnNode&) override;
 private:
 	ScopeManager scope_manager;
 	std::unordered_map<std::string, ASTNode*> function_table;

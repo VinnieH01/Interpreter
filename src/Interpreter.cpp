@@ -186,10 +186,24 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 {
 	if(function_table.find(node.get_name()) != function_table.end()) 
 	{
-		return function_table.at(node.get_name())->accept(*this);
+		try
+		{
+			InterpreterResult res = function_table.at(node.get_name())->accept(*this);
+			return res;
+		}
+		catch (const std::shared_ptr<Value>& return_val)
+		{
+			return return_val;
+		}
 	}
 
 	return "Function does not exist";
+}
+
+InterpreterResult Interpreter::visit(const ASTReturnNode&)
+{
+	throw std::shared_ptr<Value>(nullptr);
+	return {};
 }
 
 /*

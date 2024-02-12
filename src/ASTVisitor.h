@@ -20,4 +20,5 @@ public:
 	virtual T visit(const class ASTAssignmentNode&) = 0;
 	virtual T visit(const class ASTFunctionNode&) = 0;
 	virtual T visit(const class ASTCallNode&) = 0;
+	virtual T visit(const class ASTReturnNode&) = 0;
 };

@@ -45,7 +45,7 @@ private:
 
 	const std::vector<std::string> m_keywords
 	{
-		"fn", "let", "if", "else", "while", "print", "input"
+		"fn", "let", "if", "else", "ret", "while", "print", "input"
 	};
 
 	const std::vector<std::string> m_types
