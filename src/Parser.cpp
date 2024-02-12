@@ -193,31 +193,23 @@ Result<ASTNode*> Parser::parse_stmt()
 		return new ASTBlockNode(std::move(stmts));
 	}
 
-	//IDENTIFIER "(" ")"
-	const Token* call_fn = nullptr;
-	if (test({
-		[&]() { return consume(TokenType::IDENTIFIER, call_fn); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
-		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
-		}))
-	{
-		return new ASTCallNode(call_fn->get_string("name"));
-	}
-
 	//"print" <expr>
 	std::unique_ptr<ASTNode> print_expr;
 	if (test({
 		[this]() { return consume(TokenType::KEYWORD, {"print"}); },
 		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), print_expr); }
-	}))
+		}))
 	{
 		return new ASTPrintNode(print_expr.release());
 	}
 
-	//"ret"
+	//"ret" <expr>?
 	if (consume(TokenType::KEYWORD, { "ret" })) 
 	{
-		return new ASTReturnNode;
+		std::unique_ptr<ASTNode> ret_expr;
+		test({ [&]() { return test_parse(std::bind(&Parser::parse_expr, this), ret_expr); } });
+		//If there is no return value then ret_expr is nullptr
+		return new ASTReturnNode(ret_expr.release());
 	}
 
 	//"let" IDENTIFIER ":=" <expr>
@@ -386,6 +378,17 @@ Result<ASTNode*> Parser::parse_primary()
 	if (consume(TokenType::KEYWORD, { "input" })) 
 	{
 		return new ASTInputNode;
+	}
+
+	//IDENTIFIER "(" ")"
+	const Token* call_fn = nullptr;
+	if (test({
+		[&]() { return consume(TokenType::IDENTIFIER, call_fn); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {"("}); },
+		[this]() { return consume(TokenType::SPECIAL_CHAR, {")"}); }
+		}))
+	{
+		return new ASTCallNode(call_fn->get_string("name"));
 	}
 
 	// IDENTIFIER

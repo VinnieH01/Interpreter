@@ -34,8 +34,11 @@ public:
 	virtual InterpreterResult visit(const ASTCallNode&) override;
 	virtual InterpreterResult visit(const ASTReturnNode&) override;
 private:
+	//Can reuse the same void everywhere
+	std::shared_ptr<VoidValue> void_val = std::make_shared<VoidValue>();
+
 	ScopeManager scope_manager;
-	std::unordered_map<std::string, ASTNode*> function_table;
+	std::unordered_map<std::string, ASTBlockNode*> function_table;
 
 	struct UnaryOperationVisitor : ValueVisitor
 	{
@@ -47,6 +50,7 @@ private:
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
 		InterpreterResult visit(const StringValue&) override;
+		inline InterpreterResult visit(const VoidValue&) override { return "Value is void"; };
 	private:
 		template<typename T>
 		inline InterpreterResult number_operation(const NumberValue<T>& value)
@@ -70,6 +74,7 @@ private:
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
 		InterpreterResult visit(const StringValue&) override;
+		inline InterpreterResult visit(const VoidValue&) override { return "Value is void"; };
 	private:
 		template<typename T>
 		inline InterpreterResult number_operation(const NumberValue<T>& lhs, Type type)
@@ -133,6 +138,7 @@ private:
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
 		InterpreterResult visit(const StringValue&) override;
+		inline InterpreterResult visit(const VoidValue&) override { return "Value is void"; };
 	private:
 		template<typename T>
 		inline InterpreterResult print(T printable)
@@ -152,6 +158,7 @@ private:
 		InterpreterResult visit(const NumberValue<float>&) override;
 		InterpreterResult visit(const NumberValue<char>&) override;
 		InterpreterResult visit(const StringValue&) override;
+		inline InterpreterResult visit(const VoidValue&) override { return "Value is void"; };
 	private:
 		template<typename T>
 		inline InterpreterResult num_to_num(const NumberValue<T>& value)

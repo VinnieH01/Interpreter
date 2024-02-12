@@ -173,13 +173,13 @@ private:
 class ASTFunctionNode : public ASTNode
 {
 public:
-	ASTFunctionNode(const std::string& fn_name, ASTNode* block)
+	ASTFunctionNode(const std::string& fn_name, ASTBlockNode* block)
 		: m_fn_name(fn_name)
 		, m_block(block)
 	{}
 
 	inline const std::string& get_name() const { return m_fn_name; }
-	inline const std::unique_ptr<ASTNode>& get_block() const { return m_block; }
+	inline const std::unique_ptr<ASTBlockNode>& get_block() const { return m_block; }
 
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
@@ -188,7 +188,7 @@ public:
 
 private:
 	const std::string m_fn_name;
-	const std::unique_ptr<ASTNode> m_block;
+	const std::unique_ptr<ASTBlockNode> m_block;
 };
 
 class ASTCallNode : public ASTNode
@@ -213,10 +213,18 @@ private:
 class ASTReturnNode : public ASTNode
 {
 public:
+	ASTReturnNode(ASTNode* expr)
+		: m_expr(expr)
+	{}
+
+	inline const std::unique_ptr<ASTNode>& get_expr() const { return m_expr; }
+
 	inline virtual InterpreterResult accept(ASTVisitor<InterpreterResult>& visitor) const
 	{
 		return visitor.visit(*this);
 	}
+private:
+	const std::unique_ptr<ASTNode> m_expr;
 };
 
 class ASTAssignmentNode : public ASTNode

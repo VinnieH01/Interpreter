@@ -188,8 +188,7 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 	{
 		try
 		{
-			InterpreterResult res = function_table.at(node.get_name())->accept(*this);
-			return res;
+			return visit(*function_table.at(node.get_name()));
 		}
 		catch (const std::shared_ptr<Value>& return_val)
 		{
@@ -200,10 +199,20 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 	return "Function does not exist";
 }
 
-InterpreterResult Interpreter::visit(const ASTReturnNode&)
+InterpreterResult Interpreter::visit(const ASTReturnNode& node)
 {
-	throw std::shared_ptr<Value>(nullptr);
-	return {};
+	if(node.get_expr()) 
+	{
+		InterpreterResult expr_res = node.get_expr()->accept(*this);
+		if (expr_res.is_error())
+			return expr_res;
+
+		throw *expr_res;
+	}
+
+	throw static_cast<std::shared_ptr<Value>>(void_val);
+	
+	return {}; //Won't reach this line but it's fine to keep it for consistency
 }
 
 /*
