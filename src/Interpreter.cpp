@@ -132,9 +132,18 @@ InterpreterResult Interpreter::visit(const ASTBlockNode& node)
 	scope_manager.push_scope();
 	for (const auto& stmt : node.get_stmts())
 	{
-		InterpreterResult stmt_res = stmt->accept(*this);
-		if (stmt_res.is_error()) 
-			return stmt_res;
+		try
+		{
+			InterpreterResult stmt_res = stmt->accept(*this);
+			if (stmt_res.is_error())
+				return stmt_res;
+		}
+		catch (const std::shared_ptr<Value>& returned)
+		{
+			//If we return we have to pop this blocks scope before continuing with the return
+			scope_manager.pop_scope();
+			throw returned;
+		}
 	}
 	scope_manager.pop_scope();
 
@@ -218,10 +227,15 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 		catch (const std::shared_ptr<Value>& returned)
 		{
 			return_val = returned;
+
+			//Don't want to return references
+			if (const auto& ref = dynamic_cast<ReferenceValue*>(return_val.get()))
+				return_val = ref->get_variable_value();
 		}
 
 		--runtime_data.n_function_calls;
 		scope_manager.pop_scope();
+
 		return return_val;
 	}
 
