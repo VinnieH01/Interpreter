@@ -85,4 +85,22 @@ while(x <= max)
     print fib(x);
     x := x + 1;
 };
+
+//More efficient version
+//Redefine "fib"
+fn fib(n, current, next, count) 
+{
+    print current;
+
+    if (count >= n-1)
+    {
+        ret;
+    }
+    else 
+    { 
+        fib(n, next, current + next, count + 1);
+    };
+};
+
+fib(max, 1, 1, 0);
 ```
