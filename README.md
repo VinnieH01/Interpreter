@@ -16,16 +16,16 @@ For the most up to date specifications see `/spec`
 ```html
 <program>         ::= (<top-level> ";")*
 
-<top-level>       ::= "fn" IDENTIFIER "(" ")" "{" (<stmt>;*) "}"
+<top-level>       ::= "fn" IDENTIFIER "(" (IDENTIFIER ("," IDENTIFIER)*)? ")" "{" (<stmt>;*) "}"
                     | <stmt>
 
 <stmt>            ::= "{" (<stmt>;*) "}"
-                    | IDENTIFIER "(" ")"
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
                     | IDENTIFIER ":=" <expr>
                     | <if>
-                    | "while" "(" <expr> ")" <stmt>
+					| "while" "(" <expr> ")" <stmt>
+                    | "ret" <expr>?
                     | <expr>
 
 <if>              ::= "if" "(" <expr> ")" <stmt>
@@ -50,6 +50,7 @@ For the most up to date specifications see `/spec`
 					
 <primary>         ::= LITERAL
                     | IDENTIFIER
+                    | IDENTIFIER "(" (<expr> ("," <expr>)*)? ")"
                     | "input"
                     | "(" TYPE ")" <primary>
                     | "(" <expr> ")"
@@ -61,21 +62,27 @@ For the most up to date specifications see `/spec`
 ## Example
 
 ```rust
-fn foo() 
+//Print n'th fibonacci number
+fn fib(n)
 {
-	let x := 1;
-	print inp + (string)(x * 1);
-	print inp + (string)(x * 2);
-	print inp + (string)(x * 3);
+    if(n <= 1) 
+    {
+        ret n;
+    }
+    else 
+    {
+        ret fib(n-1) + fib(n-2);
+    };
 };
 
-let inp := input;
+//Set max equal to user input
+let max := (int)(input);
 
-if((int)inp < 10) let x := 2 else let x := 4;
-
-while(x > 0) 
+//Print all the "max" fist fibonacci numbers
+let x := 1;
+while(x <= max) 
 {
-	foo();
-	x := x - 1;
+    print fib(x);
+    x := x + 1;
 };
 ```
