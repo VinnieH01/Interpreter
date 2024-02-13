@@ -366,7 +366,7 @@ Result<ASTNode*> Parser::parse_unary()
 	std::unique_ptr<ASTNode> unary;
 	if (test({
 		[this]() { return consume(TokenType::OPERATOR, {"-"}); },
-		[&]() { return test_parse(std::bind(&Parser::parse_expr, this), unary); },
+		[&]() { return test_parse(std::bind(&Parser::parse_unary, this), unary); },
 	}))
 	{
 		return new ASTUnaryNode("-", unary.release());
