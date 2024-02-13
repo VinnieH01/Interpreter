@@ -150,25 +150,26 @@ InterpreterResult Interpreter::visit(const ASTBlockNode& node)
 	return {};
 }
 
-InterpreterResult Interpreter::init_var(const std::string& name, const std::unique_ptr<ASTNode>& expr)
+InterpreterResult Interpreter::deref_expr(ASTNode* expr)
 {
 	InterpreterResult expr_res = expr->accept(*this);
 	if (expr_res.is_error())
 		return expr_res;
 
-	//If the expression returned a reference we want to dereference it 
-	std::shared_ptr<Value> var_value = *expr_res;
-	if (const auto& ref = dynamic_cast<ReferenceValue*>(var_value.get()))
-		var_value = ref->get_variable_value();
+	std::shared_ptr<Value> deref = *expr_res;
+	if (const auto& ref = dynamic_cast<ReferenceValue*>(deref.get()))
+		deref = ref->get_variable_value();
 
-	scope_manager.add_variable(name, var_value);
-
-	return {};
+	return deref;
 }
 
 InterpreterResult Interpreter::visit(const ASTLetNode& node)
 {
-	return init_var(node.get_var_name(), node.get_expr());
+	//If the variable is set to a reference we want to dereference it 
+	InterpreterResult deref_res = deref_expr(node.get_expr().get());
+	if (deref_res.is_error())
+		return deref_res;
+	scope_manager.add_variable(node.get_var_name(), *deref_res);
 }
 
 InterpreterResult Interpreter::visit(const ASTAssignmentNode& node)
@@ -211,9 +212,24 @@ InterpreterResult Interpreter::visit(const ASTCallNode& node)
 
 		//Place arguments in their own scope
 		scope_manager.push_scope();
+
+		// We have to evaluate all arguments before initializing them
+		// Otherwise values depening on each other such as in fn foo(x, y) {...};
+		// foo(x+1, x) would become -> foo(x+1, x+1+1) since x will have the new value 
+		// x+1 before evauating the second argument
+		std::vector<std::shared_ptr<Value>> args_values;
 		for(size_t i = 0; i < func.arg_names->size(); ++i) 
 		{
-			init_var(func.arg_names->at(i), node.get_args().at(i));
+			//Similar to let, we don't want references here
+			InterpreterResult deref_res = deref_expr(node.get_args().at(i).get());
+			if (deref_res.is_error())
+				return deref_res;
+			args_values.push_back(*deref_res);
+		}
+
+		for (size_t i = 0; i < func.arg_names->size(); ++i)
+		{
+			scope_manager.add_variable(func.arg_names->at(i), args_values.at(i));
 		}
 
 		std::shared_ptr<Value> return_val;

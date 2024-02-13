@@ -34,7 +34,7 @@ public:
 	virtual InterpreterResult visit(const ASTCallNode&) override;
 	virtual InterpreterResult visit(const ASTReturnNode&) override;
 private:
-	InterpreterResult init_var(const std::string& name, const std::unique_ptr<ASTNode>& expr);
+	InterpreterResult deref_expr(ASTNode* expr);
 
 	//Can reuse the same void everywhere
 	std::shared_ptr<VoidValue> void_val = std::make_shared<VoidValue>();
