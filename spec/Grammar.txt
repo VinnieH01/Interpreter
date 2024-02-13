@@ -1,9 +1,9 @@
 <program>         ::= (<top-level> ";")*
 
-<top-level>       ::= "fn" IDENTIFIER "(" (IDENTIFIER ("," IDENTIFIER)*)? ")" "{" (<stmt>;*) "}"
+<top-level>       ::= "fn" IDENTIFIER "(" (IDENTIFIER ("," IDENTIFIER)*)? ")" "{" (<stmt> ";")* "}"
                     | <stmt>
 
-<stmt>            ::= "{" (<stmt>;*) "}"
+<stmt>            ::= "{" (<stmt> ";")* "}"
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
                     | IDENTIFIER ":=" <expr>

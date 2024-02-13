@@ -170,7 +170,7 @@ Result<ASTNode*> Parser::parse_top_level()
 			return Error("Expected ')' after arguments", m_current_token->get_position());
 		}
 
-		//"{" (<stmt>;*) "}" //TODO Remove duplication
+		//"{" (<stmt>;)* "}" //TODO Remove duplication
 		if (consume(TokenType::SPECIAL_CHAR, {"{"}))
 		{
 			std::vector<std::unique_ptr<ASTNode>> stmts;
@@ -195,7 +195,7 @@ Result<ASTNode*> Parser::parse_top_level()
 
 Result<ASTNode*> Parser::parse_stmt()
 {
-	//"{" (<stmt>;*) "}"
+	//"{" (<stmt>;)* "}"
 	if (consume(TokenType::SPECIAL_CHAR, {"{"}))
 	{
 		std::vector<std::unique_ptr<ASTNode>> stmts;
