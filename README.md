@@ -3,6 +3,9 @@
 ## About
 This is a Lexer, Parser and Interpreter for a simple custom programming language.
 
+### How to run
+`Interpreter.exe <source_file>`
+
 ## Filestructure
 Path                                    | Comment
 --------------------------------------- | -------------
@@ -16,10 +19,10 @@ For the most up to date specifications see `/spec`
 ```html
 <program>         ::= (<top-level> ";")*
 
-<top-level>       ::= "fn" IDENTIFIER "(" (IDENTIFIER ("," IDENTIFIER)*)? ")" "{" (<stmt>;*) "}"
+<top-level>       ::= "fn" IDENTIFIER "(" (IDENTIFIER ("," IDENTIFIER)*)? ")" "{" (<stmt> ";")* "}"
                     | <stmt>
 
-<stmt>            ::= "{" (<stmt>;*) "}"
+<stmt>            ::= "{" (<stmt> ";")* "}"
                     | "print" <expr>
                     | "let" IDENTIFIER ":=" <expr>
                     | IDENTIFIER ":=" <expr>
